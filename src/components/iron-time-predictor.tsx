@@ -11,6 +11,11 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { TimeInputGroup } from '@/components/time-input-group';
+import { PaceInputGroup } from '@/components/pace-input-group';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { getPerformanceInsights } from '@/ai/flows/performance-insights';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -27,14 +32,36 @@ import {
 type Time = { h: number; m: number; s: number };
 const zeroTime: Time = { h: 0, m: 0, s: 0 };
 
+type Pace = { m: number; s: number };
+
+const DISTANCES = {
+  full: { swim: 3800, bike: 180, run: 42.2, name: 'Full Distance' },
+  half: { swim: 1900, bike: 90, run: 21.1, name: 'Half Distance' },
+  olympic: { swim: 1500, bike: 40, run: 10, name: 'Olympic' },
+  sprint: { swim: 750, bike: 20, run: 5, name: 'Sprint' },
+};
+type DistanceKey = keyof typeof DISTANCES;
+
 export function IronTimePredictor() {
+  // Time states
   const [swimTime, setSwimTime] = useState<Time>(zeroTime);
   const [t1Time, setT1Time] = useState<Time>(zeroTime);
   const [bikeTime, setBikeTime] = useState<Time>(zeroTime);
   const [t2Time, setT2Time] = useState<Time>(zeroTime);
   const [runTime, setRunTime] = useState<Time>(zeroTime);
-
   const [totalTime, setTotalTime] = useState<Time>(zeroTime);
+
+  // Input mode and value states
+  const [distance, setDistance] = useState<DistanceKey>('full');
+  const [swimInputMode, setSwimInputMode] = useState<'time' | 'pace'>('time');
+  const [bikeInputMode, setBikeInputMode] = useState<'time' | 'speed'>('time');
+  const [runInputMode, setRunInputMode] = useState<'time' | 'pace'>('time');
+
+  const [swimPace, setSwimPace] = useState<Pace>({ m: 1, s: 45 });
+  const [bikeSpeed, setBikeSpeed] = useState(35);
+  const [runPace, setRunPace] = useState<Pace>({ m: 5, s: 30 });
+
+  // UI States
   const [insight, setInsight] = useState<string>('');
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -42,7 +69,6 @@ export function IronTimePredictor() {
   const { toast } = useToast();
 
   const timeToSeconds = (time: Time) => time.h * 3600 + time.m * 60 + time.s;
-
   const secondsToTime = (seconds: number): Time => {
     const h = Math.floor(seconds / 3600);
     const m = Math.floor((seconds % 3600) / 60);
@@ -50,6 +76,7 @@ export function IronTimePredictor() {
     return { h, m, s };
   };
 
+  // Effect to calculate total time
   useEffect(() => {
     const totalSeconds =
       timeToSeconds(swimTime) +
@@ -59,6 +86,44 @@ export function IronTimePredictor() {
       timeToSeconds(runTime);
     setTotalTime(secondsToTime(totalSeconds));
   }, [swimTime, t1Time, bikeTime, t2Time, runTime]);
+
+  // Effects to calculate discipline times from pace/speed
+  useEffect(() => {
+    if (swimInputMode === 'pace') {
+      const paceInSeconds = swimPace.m * 60 + swimPace.s;
+      if (paceInSeconds === 0) {
+        setSwimTime(zeroTime);
+        return;
+      }
+      const totalSeconds = (DISTANCES[distance].swim / 100) * paceInSeconds;
+      setSwimTime(secondsToTime(totalSeconds));
+    }
+  }, [swimPace, distance, swimInputMode]);
+
+  useEffect(() => {
+    if (bikeInputMode === 'speed') {
+      if (bikeSpeed <= 0) {
+        setBikeTime(zeroTime);
+        return;
+      }
+      const totalHours = DISTANCES[distance].bike / bikeSpeed;
+      const totalSeconds = totalHours * 3600;
+      setBikeTime(secondsToTime(totalSeconds));
+    }
+  }, [bikeSpeed, distance, bikeInputMode]);
+
+  useEffect(() => {
+    if (runInputMode === 'pace') {
+      const paceInSeconds = runPace.m * 60 + runPace.s;
+      if (paceInSeconds === 0) {
+        setRunTime(zeroTime);
+        return;
+      }
+      const totalSeconds = DISTANCES[distance].run * paceInSeconds;
+      setRunTime(secondsToTime(totalSeconds));
+    }
+  }, [runPace, distance, runInputMode]);
+
 
   const formatTime = (time: Time) => {
     return `${String(time.h).padStart(2, '0')}:${String(time.m).padStart(
@@ -102,15 +167,16 @@ export function IronTimePredictor() {
 
   const handleShare = () => {
     const shareText =
-      `My Predicted Ironman Time: ${formatTime(totalTime)}\n\n` +
+      `My Predicted ${DISTANCES[distance].name} Time: ${formatTime(totalTime)}\n\n` +
       `Swim: ${formatTime(swimTime)}\n` +
       `T1: ${formatTime(t1Time)}\n` +
       `Bike: ${formatTime(bikeTime)}\n` +
       `T2: ${formatTime(t2Time)}\n` +
       `Run: ${formatTime(runTime)}\n\n` +
       (insight
-        ? `AI Insight: ${insight}`
-        : 'Get your own prediction at IronTime Predictor!');
+        ? `AI Insight: ${insight}\n\n`
+        : '') +
+      'Get your own prediction at IronTime Predictor!';
 
     navigator.clipboard
       .writeText(shareText)
@@ -138,51 +204,66 @@ export function IronTimePredictor() {
       <Card className="lg:col-span-3 shadow-lg hover:shadow-xl transition-shadow duration-300 flex flex-col overflow-hidden">
         <CardHeader>
           <CardTitle className="text-2xl font-headline tracking-tight">
-            Time Entry
+            Race Configuration
           </CardTitle>
           <CardDescription>
-            Enter your estimated times for each discipline.
+            Select a distance, then enter your times, paces, or speeds.
           </CardDescription>
         </CardHeader>
-        <CardContent className="grid sm:grid-cols-2 gap-6 flex-grow">
-          <TimeInputGroup
-            label="Swim"
-            icon={<Waves className="text-primary" />}
-            time={swimTime}
-            setTime={setSwimTime}
-          />
-          <TimeInputGroup
-            label="Transition 1"
-            icon={<ArrowRightLeft className="text-accent" />}
-            time={t1Time}
-            setTime={setT1Time}
-          />
-          <TimeInputGroup
-            label="Bike"
-            icon={<Bike className="text-primary" />}
-            time={bikeTime}
-            setTime={setBikeTime}
-          />
-          <TimeInputGroup
-            label="Transition 2"
-            icon={<ArrowRightLeft className="text-accent" />}
-            time={t2Time}
-            setTime={setT2Time}
-          />
-          <div className="sm:col-span-2 flex justify-center">
-            <TimeInputGroup
-              label="Run"
-              icon={<PersonStanding className="text-primary" />}
-              time={runTime}
-              setTime={setRunTime}
-            />
+        <CardContent className="space-y-6">
+          <div>
+            <Label className="text-lg font-medium mb-2 block">Distance</Label>
+            <RadioGroup
+              value={distance}
+              onValueChange={(value) => setDistance(value as DistanceKey)}
+              className="grid grid-cols-2 sm:grid-cols-4 gap-4"
+            >
+              {Object.keys(DISTANCES).map((key) => (
+                <div key={key} className="flex items-center space-x-2">
+                  <RadioGroupItem value={key} id={key} />
+                  <Label htmlFor={key} className="cursor-pointer">{DISTANCES[key as DistanceKey].name}</Label>
+                </div>
+              ))}
+            </RadioGroup>
+          </div>
+          <div className="grid sm:grid-cols-2 gap-6">
+            <Tabs value={swimInputMode} onValueChange={(v) => setSwimInputMode(v as any)} className="w-full">
+                <TabsList className="grid w-full grid-cols-2"><TabsTrigger value="time">Time</TabsTrigger><TabsTrigger value="pace">Pace</TabsTrigger></TabsList>
+                <TabsContent value="time" className="pt-2"><TimeInputGroup label="Swim" icon={<Waves className="text-primary" />} time={swimTime} setTime={setSwimTime} /></TabsContent>
+                <TabsContent value="pace" className="pt-2"><PaceInputGroup label="Swim Pace" unit="/100m" icon={<Waves className="text-primary" />} pace={swimPace} setPace={setSwimPace} /></TabsContent>
+            </Tabs>
+            
+            <TimeInputGroup label="Transition 1" icon={<ArrowRightLeft className="text-accent" />} time={t1Time} setTime={setT1Time} />
+            
+            <Tabs value={bikeInputMode} onValueChange={(v) => setBikeInputMode(v as any)} className="w-full">
+                <TabsList className="grid w-full grid-cols-2"><TabsTrigger value="time">Time</TabsTrigger><TabsTrigger value="speed">Speed</TabsTrigger></TabsList>
+                <TabsContent value="time" className="pt-2"><TimeInputGroup label="Bike" icon={<Bike className="text-primary" />} time={bikeTime} setTime={setBikeTime} /></TabsContent>
+                <TabsContent value="speed" className="pt-2">
+                    <div className="space-y-2">
+                        <Label className="flex items-center gap-2 text-lg font-medium">
+                            <Bike className="text-primary" /> Bike Speed <span className="text-sm text-muted-foreground">km/h</span>
+                        </Label>
+                        <Input type="number" value={bikeSpeed} onChange={(e) => setBikeSpeed(Number(e.target.value) || 0)} placeholder="e.g. 35" aria-label="Bike speed in km/h" min="0" className="font-mono text-center" />
+                    </div>
+                </TabsContent>
+            </Tabs>
+
+            <TimeInputGroup label="Transition 2" icon={<ArrowRightLeft className="text-accent" />} time={t2Time} setTime={setT2Time} />
+
+            <div className="sm:col-span-2 flex justify-center">
+              <Tabs value={runInputMode} onValueChange={(v) => setRunInputMode(v as any)} className="w-full max-w-sm">
+                  <TabsList className="grid w-full grid-cols-2"><TabsTrigger value="time">Time</TabsTrigger><TabsTrigger value="pace">Pace</TabsTrigger></TabsList>
+                  <TabsContent value="time" className="pt-2"><TimeInputGroup label="Run" icon={<PersonStanding className="text-primary" />} time={runTime} setTime={setRunTime} /></TabsContent>
+                  <TabsContent value="pace" className="pt-2"><PaceInputGroup label="Run Pace" unit="/km" icon={<PersonStanding className="text-primary" />} pace={runPace} setPace={setRunPace} /></TabsContent>
+              </Tabs>
+            </div>
           </div>
         </CardContent>
         <div className="mt-auto">
           <Image
             src="https://placehold.co/800x400.png"
-            alt="Triathlete swimming in open water"
-            data-ai-hint="triathlon swimming"
+            alt="Triathlete crossing the finish line"
+            data-ai-hint="triathlon finish"
             width={800}
             height={400}
             className="w-full h-auto object-cover"
