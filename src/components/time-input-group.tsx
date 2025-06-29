@@ -6,8 +6,8 @@ import { Label } from '@/components/ui/label';
 type Time = { h: number; m: number; s: number };
 
 interface TimeInputGroupProps {
-  label: string;
-  icon: React.ReactNode;
+  label?: string;
+  icon?: React.ReactNode;
   time: Time;
   setTime: (time: Time) => void;
 }
@@ -36,27 +36,31 @@ export function TimeInputGroup({
 
   return (
     <div className="space-y-2">
-      <Label className="flex items-center gap-2 text-lg font-medium">
-        {icon}
-        {label}
-      </Label>
+      {label && icon && (
+        <Label className="flex items-center gap-2 text-lg font-medium">
+          {icon}
+          {label}
+        </Label>
+      )}
       <div className="flex items-center gap-2">
         <Input
           type="number"
-          value={time.h}
+          value={String(time.h).padStart(2, '0')}
+          onFocus={(e) => e.target.select()}
           onChange={(e) => handleInputChange('h', e.target.value)}
           placeholder="HH"
-          aria-label={`${label} hours`}
+          aria-label={`${label || 'Time'} hours`}
           min="0"
           className="font-mono text-center"
         />
         <span className="font-bold text-muted-foreground">:</span>
         <Input
           type="number"
-          value={time.m}
+          value={String(time.m).padStart(2, '0')}
+          onFocus={(e) => e.target.select()}
           onChange={(e) => handleInputChange('m', e.target.value)}
           placeholder="MM"
-          aria-label={`${label} minutes`}
+          aria-label={`${label || 'Time'} minutes`}
           min="0"
           max="59"
           className="font-mono text-center"
@@ -64,10 +68,11 @@ export function TimeInputGroup({
         <span className="font-bold text-muted-foreground">:</span>
         <Input
           type="number"
-          value={time.s}
+          value={String(time.s).padStart(2, '0')}
+          onFocus={(e) => e.target.select()}
           onChange={(e) => handleInputChange('s', e.target.value)}
           placeholder="SS"
-          aria-label={`${label} seconds`}
+          aria-label={`${label || 'Time'} seconds`}
           min="0"
           max="59"
           className="font-mono text-center"

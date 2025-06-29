@@ -6,9 +6,9 @@ import { Label } from '@/components/ui/label';
 type Pace = { m: number; s: number };
 
 interface PaceInputGroupProps {
-  label: string;
+  label?: string;
   unit: string;
-  icon: React.ReactNode;
+  icon?: React.ReactNode;
   pace: Pace;
   setPace: (pace: Pace) => void;
 }
@@ -36,17 +36,19 @@ export function PaceInputGroup({
 
   return (
     <div className="space-y-2">
-      <Label className="flex items-center gap-2 text-lg font-medium">
-        {icon}
-        {label} <span className="text-sm text-muted-foreground">{unit}</span>
-      </Label>
+      {label && (
+        <Label className="flex items-center gap-2 text-lg font-medium">
+          {icon}
+          {label} <span className="text-sm text-muted-foreground">{unit}</span>
+        </Label>
+      )}
       <div className="flex items-center gap-2">
         <Input
           type="number"
           value={String(pace.m)}
           onChange={(e) => handleInputChange('m', e.target.value)}
           placeholder="MM"
-          aria-label={`${label} minutes`}
+          aria-label={`${label || 'Pace'} minutes`}
           min="0"
           className="font-mono text-center"
         />
@@ -57,7 +59,7 @@ export function PaceInputGroup({
           onFocus={(e) => e.target.select()}
           onChange={(e) => handleInputChange('s', e.target.value)}
           placeholder="SS"
-          aria-label={`${label} seconds`}
+          aria-label={`${label || 'Pace'} seconds`}
           min="0"
           max="59"
           className="font-mono text-center"
