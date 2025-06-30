@@ -16,6 +16,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { ResultsChart } from '@/components/results-chart';
+import { DistanceIcon } from './distance-icon';
 import {
   Waves,
   Bike,
@@ -123,7 +124,8 @@ export function IronTimePredictor() {
     <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 w-full">
       <Card className="lg:col-span-3 shadow-lg hover:shadow-xl transition-shadow duration-300 flex flex-col overflow-hidden">
         <CardHeader>
-          <CardTitle className="text-2xl font-headline tracking-tight">
+          <CardTitle className="text-2xl font-headline tracking-tight flex items-center gap-3">
+            <DistanceIcon distance={distance} className="h-6 w-6 text-primary" />
             Race Configuration
           </CardTitle>
           <CardDescription>
@@ -169,7 +171,7 @@ export function IronTimePredictor() {
 
             <Separator className="my-6" />
 
-            <div className="space-y-3">
+            <div className="space-y-3 p-4 rounded-lg bg-secondary/50">
                <div className="flex justify-between items-end">
                 <Label className="flex items-center gap-2 text-xl font-medium font-headline">
                   <ArrowRightLeft className="text-accent size-6" />
@@ -208,7 +210,7 @@ export function IronTimePredictor() {
             
             <Separator className="my-6" />
 
-            <div className="space-y-3">
+            <div className="space-y-3 p-4 rounded-lg bg-secondary/50">
               <div className="flex justify-between items-end">
                 <Label className="flex items-center gap-2 text-xl font-medium font-headline">
                   <ArrowRightLeft className="text-accent size-6" />
