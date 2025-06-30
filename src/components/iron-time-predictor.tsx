@@ -249,7 +249,13 @@ export function IronTimePredictor() {
           </CardContent>
         </Card>
 
-        <ResultsChart totalTime={totalTime} distance={distance} />
+        <ResultsChart
+          totalTime={totalTime}
+          swimTime={swimTime}
+          bikeTime={bikeTime}
+          runTime={runTime}
+          distance={distance}
+        />
       </div>
     </div>
   );
