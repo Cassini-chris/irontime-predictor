@@ -17,13 +17,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
-import { useToast } from '@/hooks/use-toast';
 import {
   Waves,
   Bike,
   PersonStanding,
   ArrowRightLeft,
-  Share2,
 } from 'lucide-react';
 
 type Time = { h: number; m: number; s: number };
@@ -57,8 +55,6 @@ export function IronTimePredictor() {
   const [swimPace, setSwimPace] = useState<Pace>({ m: 1, s: 45 });
   const [bikeSpeed, setBikeSpeed] = useState(35);
   const [runPace, setRunPace] = useState<Pace>({ m: 5, s: 30 });
-
-  const { toast } = useToast();
 
   const timeToSeconds = (time: Time) => time.h * 3600 + time.m * 60 + time.s;
   const secondsToTime = (seconds: number): Time => {
@@ -123,37 +119,6 @@ export function IronTimePredictor() {
       '0'
     )}:${String(time.s).padStart(2, '0')}`;
   };
-
-  const handleShare = () => {
-    const shareText =
-      `My Predicted ${DISTANCES[distance].name} Time: ${formatTime(totalTime)}\n\n` +
-      `Swim: ${formatTime(swimTime)}\n` +
-      `T1: ${formatTime(t1Time)}\n` +
-      `Bike: ${formatTime(bikeTime)}\n` +
-      `T2: ${formatTime(t2Time)}\n` +
-      `Run: ${formatTime(runTime)}\n\n` +
-      'Get your own prediction at IronTime Predictor!';
-
-    navigator.clipboard
-      .writeText(shareText)
-      .then(() => {
-        toast({
-          title: 'Copied to clipboard!',
-          description: 'Your results are ready to be shared.',
-        });
-      })
-      .catch((err) => {
-        console.error('Failed to copy: ', err);
-        toast({
-          variant: 'destructive',
-          title: 'Failed to copy',
-          description: 'Could not copy results to clipboard.',
-        });
-      });
-  };
-
-  const isTotalTimeZero =
-    totalTime.h === 0 && totalTime.m === 0 && totalTime.s === 0;
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 w-full">
@@ -303,17 +268,6 @@ export function IronTimePredictor() {
               {formatTime(totalTime)}
             </p>
           </CardContent>
-          <div className="px-6 pb-6">
-            <Button
-              onClick={handleShare}
-              disabled={isTotalTimeZero}
-              variant="outline"
-              className="w-full"
-            >
-              <Share2 className="mr-2" />
-              Share Results
-            </Button>
-          </div>
         </Card>
 
         <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden">

@@ -1,5 +1,6 @@
 'use client';
 
+import * as React from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
@@ -16,6 +17,9 @@ export function PaceInputGroup({
   pace,
   setPace,
 }: PaceInputGroupProps) {
+  const mId = React.useId();
+  const sId = React.useId();
+
   const handleInputChange = (field: keyof Pace, value: string) => {
     let numericValue = parseInt(value, 10);
     if (isNaN(numericValue)) {
@@ -35,28 +39,40 @@ export function PaceInputGroup({
       <Label className="text-sm font-medium">
         Pace <span className="text-muted-foreground">({unit})</span>
       </Label>
-      <div className="flex items-center gap-2">
-        <Input
-          type="number"
-          value={String(pace.m)}
-          onChange={(e) => handleInputChange('m', e.target.value)}
-          placeholder="MM"
-          aria-label="Pace minutes"
-          min="0"
-          className="font-mono text-center"
-        />
-        <span className="font-bold text-muted-foreground">:</span>
-        <Input
-          type="number"
-          value={String(pace.s).padStart(2, '0')}
-          onFocus={(e) => e.target.select()}
-          onChange={(e) => handleInputChange('s', e.target.value)}
-          placeholder="SS"
-          aria-label="Pace seconds"
-          min="0"
-          max="59"
-          className="font-mono text-center"
-        />
+      <div className="flex items-start gap-2">
+        <div className="grid w-full gap-1.5 text-center">
+          <Input
+            id={mId}
+            type="number"
+            value={String(pace.m)}
+            onChange={(e) => handleInputChange('m', e.target.value)}
+            placeholder="MM"
+            aria-label="Pace minutes"
+            min="0"
+            className="font-mono text-center"
+          />
+          <Label htmlFor={mId} className="text-xs text-muted-foreground">
+            Min
+          </Label>
+        </div>
+        <span className="pt-2 font-bold text-muted-foreground">:</span>
+        <div className="grid w-full gap-1.5 text-center">
+          <Input
+            id={sId}
+            type="number"
+            value={String(pace.s).padStart(2, '0')}
+            onFocus={(e) => e.target.select()}
+            onChange={(e) => handleInputChange('s', e.target.value)}
+            placeholder="SS"
+            aria-label="Pace seconds"
+            min="0"
+            max="59"
+            className="font-mono text-center"
+          />
+          <Label htmlFor={sId} className="text-xs text-muted-foreground">
+            Sec
+          </Label>
+        </div>
       </div>
     </div>
   );

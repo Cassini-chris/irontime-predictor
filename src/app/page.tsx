@@ -13,9 +13,8 @@ export default function Home() {
             </h1>
           </div>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            A futuristic calculator for your Ironman total time. Input your
-            discipline times to predict your finish and get AI-powered
-            performance insights.
+            A calculator for your Ironman total time. Input your discipline
+            times to predict your finish.
           </p>
         </header>
 
