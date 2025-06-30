@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Image from 'next/image';
 import {
   Card,
   CardContent,
@@ -9,7 +8,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { TimeInputGroup } from '@/components/time-input-group';
 import { PaceInputGroup } from '@/components/pace-input-group';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -17,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
+import { ResultsChart } from '@/components/results-chart';
 import {
   Waves,
   Bike,
@@ -24,7 +23,7 @@ import {
   ArrowRightLeft,
 } from 'lucide-react';
 
-type Time = { h: number; m: number; s: number };
+export type Time = { h: number; m: number; s: number };
 const zeroTime: Time = { h: 0, m: 0, s: 0 };
 
 type Pace = { m: number; s: number };
@@ -35,14 +34,14 @@ const DISTANCES = {
   olympic: { swim: 1500, bike: 40, run: 10, name: 'Olympic' },
   sprint: { swim: 750, bike: 20, run: 5, name: 'Sprint' },
 };
-type DistanceKey = keyof typeof DISTANCES;
+export type DistanceKey = keyof typeof DISTANCES;
 
 export function IronTimePredictor() {
   // Time states
   const [swimTime, setSwimTime] = useState<Time>(zeroTime);
-  const [t1Time, setT1Time] = useState<Time>(zeroTime);
+  const [t1Time, setT1Time] = useState<Time>({ h: 0, m: 5, s: 0 });
   const [bikeTime, setBikeTime] = useState<Time>(zeroTime);
-  const [t2Time, setT2Time] = useState<Time>(zeroTime);
+  const [t2Time, setT2Time] = useState<Time>({ h: 0, m: 3, s: 0 });
   const [runTime, setRunTime] = useState<Time>(zeroTime);
   const [totalTime, setTotalTime] = useState<Time>(zeroTime);
 
@@ -168,11 +167,8 @@ export function IronTimePredictor() {
               </Tabs>
             </div>
 
-            <Separator />
-
-            {/* T1 Section */}
-            <div className="space-y-3">
-              <div className="flex justify-between items-end">
+            <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+               <div className="flex justify-between items-end">
                 <Label className="flex items-center gap-2 text-xl font-medium font-headline">
                   <ArrowRightLeft className="text-accent size-6" />
                   Transition 1
@@ -181,8 +177,6 @@ export function IronTimePredictor() {
               </div>
               <TimeInputGroup time={t1Time} setTime={setT1Time} />
             </div>
-
-            <Separator />
 
             {/* Bike Section */}
             <div className="space-y-3">
@@ -208,10 +202,7 @@ export function IronTimePredictor() {
               </Tabs>
             </div>
 
-            <Separator />
-
-            {/* T2 Section */}
-            <div className="space-y-3">
+            <div className="bg-muted/50 rounded-lg p-4 space-y-3">
               <div className="flex justify-between items-end">
                 <Label className="flex items-center gap-2 text-xl font-medium font-headline">
                   <ArrowRightLeft className="text-accent size-6" />
@@ -221,8 +212,6 @@ export function IronTimePredictor() {
               </div>
               <TimeInputGroup time={t2Time} setTime={setT2Time} />
             </div>
-
-            <Separator />
 
             {/* Run Section */}
             <div className="space-y-3">
@@ -244,16 +233,6 @@ export function IronTimePredictor() {
             </div>
           </div>
         </CardContent>
-        <div className="mt-auto">
-          <Image
-            src="https://placehold.co/800x400.png"
-            alt="Triathlete crossing the finish line"
-            data-ai-hint="triathlon finish"
-            width={800}
-            height={400}
-            className="w-full h-auto object-cover"
-          />
-        </div>
       </Card>
 
       <div className="lg:col-span-2 space-y-8">
@@ -270,16 +249,7 @@ export function IronTimePredictor() {
           </CardContent>
         </Card>
 
-        <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden">
-          <Image
-            src="https://placehold.co/600x400.png"
-            alt="Triathlete running towards finish line"
-            data-ai-hint="triathlon running"
-            width={600}
-            height={400}
-            className="w-full h-auto object-cover transition-transform hover:scale-105 duration-300"
-          />
-        </Card>
+        <ResultsChart totalTime={totalTime} distance={distance} />
       </div>
     </div>
   );
