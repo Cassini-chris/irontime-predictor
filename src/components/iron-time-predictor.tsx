@@ -147,7 +147,7 @@ export function IronTimePredictor() {
             </RadioGroup>
           </div>
           <Separator />
-          <div className="flex flex-col space-y-6 pt-2">
+          <div className="flex flex-col pt-2">
             {/* Swim Section */}
             <div className="space-y-3">
               <div className="flex justify-between items-end">
@@ -167,7 +167,9 @@ export function IronTimePredictor() {
               </Tabs>
             </div>
 
-            <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+            <Separator className="my-6" />
+
+            <div className="space-y-3">
                <div className="flex justify-between items-end">
                 <Label className="flex items-center gap-2 text-xl font-medium font-headline">
                   <ArrowRightLeft className="text-accent size-6" />
@@ -177,6 +179,8 @@ export function IronTimePredictor() {
               </div>
               <TimeInputGroup time={t1Time} setTime={setT1Time} />
             </div>
+
+            <Separator className="my-6" />
 
             {/* Bike Section */}
             <div className="space-y-3">
@@ -201,8 +205,10 @@ export function IronTimePredictor() {
                 </TabsContent>
               </Tabs>
             </div>
+            
+            <Separator className="my-6" />
 
-            <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+            <div className="space-y-3">
               <div className="flex justify-between items-end">
                 <Label className="flex items-center gap-2 text-xl font-medium font-headline">
                   <ArrowRightLeft className="text-accent size-6" />
@@ -212,6 +218,8 @@ export function IronTimePredictor() {
               </div>
               <TimeInputGroup time={t2Time} setTime={setT2Time} />
             </div>
+
+            <Separator className="my-6" />
 
             {/* Run Section */}
             <div className="space-y-3">

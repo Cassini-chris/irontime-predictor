@@ -350,7 +350,7 @@ export function ResultsChart({
   };
 
   return (
-    <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300 h-full flex flex-col">
+    <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300 flex flex-col">
       <CardHeader>
         <CardTitle className="text-2xl font-headline tracking-tight">
           Performance Analysis
