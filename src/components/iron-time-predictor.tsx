@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useTransition } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import {
   Card,
@@ -17,17 +17,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
-import { getPerformanceInsights } from '@/ai/flows/performance-insights';
 import { useToast } from '@/hooks/use-toast';
 import {
   Waves,
   Bike,
   PersonStanding,
   ArrowRightLeft,
-  BrainCircuit,
   Share2,
-  Loader2,
-  AlertCircle,
 } from 'lucide-react';
 
 type Time = { h: number; m: number; s: number };
@@ -61,11 +57,6 @@ export function IronTimePredictor() {
   const [swimPace, setSwimPace] = useState<Pace>({ m: 1, s: 45 });
   const [bikeSpeed, setBikeSpeed] = useState(35);
   const [runPace, setRunPace] = useState<Pace>({ m: 5, s: 30 });
-
-  // UI States
-  const [insight, setInsight] = useState<string>('');
-  const [isPending, startTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
 
   const { toast } = useToast();
 
@@ -133,39 +124,6 @@ export function IronTimePredictor() {
     )}:${String(time.s).padStart(2, '0')}`;
   };
 
-  const handleGetInsight = () => {
-    setError(null);
-    setInsight('');
-    startTransition(async () => {
-      const timeToMinutes = (time: Time) => time.h * 60 + time.m + time.s / 60;
-      const input = {
-        swimTime: timeToMinutes(swimTime),
-        bikeTime: timeToMinutes(bikeTime),
-        runTime: timeToMinutes(runTime),
-        t1Time: timeToMinutes(t1Time),
-        t2Time: timeToMinutes(t2Time),
-      };
-
-      if (Object.values(input).every((val) => val === 0)) {
-        setError('Please enter some times to get an insight.');
-        return;
-      }
-
-      try {
-        const result = await getPerformanceInsights(input);
-        setInsight(result.insight);
-      } catch (e) {
-        console.error(e);
-        setError('Could not generate insight. Please try again later.');
-        toast({
-          variant: 'destructive',
-          title: 'AI Insight Error',
-          description: 'There was a problem getting your performance insight.',
-        });
-      }
-    });
-  };
-
   const handleShare = () => {
     const shareText =
       `My Predicted ${DISTANCES[distance].name} Time: ${formatTime(totalTime)}\n\n` +
@@ -174,9 +132,6 @@ export function IronTimePredictor() {
       `Bike: ${formatTime(bikeTime)}\n` +
       `T2: ${formatTime(t2Time)}\n` +
       `Run: ${formatTime(runTime)}\n\n` +
-      (insight
-        ? `AI Insight: ${insight}\n\n`
-        : '') +
       'Get your own prediction at IronTime Predictor!';
 
     navigator.clipboard
@@ -244,7 +199,7 @@ export function IronTimePredictor() {
               <Tabs value={swimInputMode} onValueChange={(v) => setSwimInputMode(v as any)} className="w-full">
                 <TabsList className="grid w-full grid-cols-2"><TabsTrigger value="time">Set Time</TabsTrigger><TabsTrigger value="pace">Set Pace</TabsTrigger></TabsList>
                 <TabsContent value="time" className="pt-4"><TimeInputGroup time={swimTime} setTime={setSwimTime} /></TabsContent>
-                <TabsContent value="pace" className="pt-4"><PaceInputGroup unit="/100m" pace={swimPace} setPace={setSwimPace} /></TabsContent>
+                <TabsContent value="pace" className="pt-4"><PaceInputGroup unit="min/100m" pace={swimPace} setPace={setSwimPace} /></TabsContent>
               </Tabs>
             </div>
 
@@ -257,7 +212,7 @@ export function IronTimePredictor() {
                   <ArrowRightLeft className="text-accent size-6" />
                   Transition 1
                 </Label>
-                <p className="font-mono text-3xl font-bold tracking-tight text-primary">{formatTime(t1Time)}</p>
+                <p className="font-mono text-3xl font-bold tracking-tight text-accent">{formatTime(t1Time)}</p>
               </div>
               <TimeInputGroup time={t1Time} setTime={setT1Time} />
             </div>
@@ -297,7 +252,7 @@ export function IronTimePredictor() {
                   <ArrowRightLeft className="text-accent size-6" />
                   Transition 2
                 </Label>
-                <p className="font-mono text-3xl font-bold tracking-tight text-primary">{formatTime(t2Time)}</p>
+                <p className="font-mono text-3xl font-bold tracking-tight text-accent">{formatTime(t2Time)}</p>
               </div>
               <TimeInputGroup time={t2Time} setTime={setT2Time} />
             </div>
@@ -319,7 +274,7 @@ export function IronTimePredictor() {
               <Tabs value={runInputMode} onValueChange={(v) => setRunInputMode(v as any)} className="w-full">
                 <TabsList className="grid w-full grid-cols-2"><TabsTrigger value="time">Set Time</TabsTrigger><TabsTrigger value="pace">Set Pace</TabsTrigger></TabsList>
                 <TabsContent value="time" className="pt-4"><TimeInputGroup time={runTime} setTime={setRunTime} /></TabsContent>
-                <TabsContent value="pace" className="pt-4"><PaceInputGroup unit="/km" pace={runPace} setPace={setRunPace} /></TabsContent>
+                <TabsContent value="pace" className="pt-4"><PaceInputGroup unit="min/km" pace={runPace} setPace={setRunPace} /></TabsContent>
               </Tabs>
             </div>
           </div>
@@ -348,46 +303,6 @@ export function IronTimePredictor() {
               {formatTime(totalTime)}
             </p>
           </CardContent>
-        </Card>
-
-        <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-2xl font-headline tracking-tight">
-              <BrainCircuit className="text-accent" />
-              Performance Insight
-            </CardTitle>
-            <CardDescription>
-              Let AI analyze your splits for improvement tips.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4 text-center">
-            <Button
-              onClick={handleGetInsight}
-              disabled={isPending || isTotalTimeZero}
-              className="w-full bg-accent hover:bg-accent/90"
-            >
-              {isPending ? (
-                <Loader2 className="animate-spin" />
-              ) : (
-                'Get AI Insight'
-              )}
-            </Button>
-            {isPending && (
-              <p className="text-sm text-muted-foreground animate-pulse">
-                Analyzing your performance...
-              </p>
-            )}
-            {error && (
-              <p className="text-sm text-destructive flex items-center justify-center gap-2">
-                <AlertCircle size={16} /> {error}
-              </p>
-            )}
-            {insight && (
-              <p className="text-sm text-foreground bg-primary/10 p-3 rounded-md">
-                {insight}
-              </p>
-            )}
-          </CardContent>
           <div className="px-6 pb-6">
             <Button
               onClick={handleShare}
@@ -400,6 +315,7 @@ export function IronTimePredictor() {
             </Button>
           </div>
         </Card>
+
         <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden">
           <Image
             src="https://placehold.co/600x400.png"
