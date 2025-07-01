@@ -33,6 +33,7 @@ import {
 import { GoalSetter } from './goal-setter';
 import { BlummenfeltComparison } from './blummenfelt-comparison';
 import { NutritionCalculator } from './nutrition-calculator';
+import { PacePlanner } from './pace-planner';
 
 export type Time = { h: number; m: number; s: number };
 const zeroTime: Time = { h: 0, m: 0, s: 0 };
@@ -328,6 +329,11 @@ export function IronTimePredictor() {
             distance={distance}
           />
           <NutritionCalculator bikeTime={bikeTime} runTime={runTime} />
+          <PacePlanner
+            distance={distance}
+            bikeTime={bikeTime}
+            runTime={runTime}
+          />
           <BlummenfeltComparison totalTime={totalTime} distance={distance} />
         </div>
       </div>
