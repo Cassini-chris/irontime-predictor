@@ -6,6 +6,7 @@ import { Logo } from '@/components/icons';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { Gift } from 'lucide-react';
 
 export default function Home() {
   const [showOverlay, setShowOverlay] = useState(false);
@@ -62,6 +63,7 @@ export default function Home() {
                   onClick={handleEasterEggClick}
                   variant="outline"
                 >
+                  <Gift />
                   I have built this app for Roth 2025
                 </Button>
               </div>
