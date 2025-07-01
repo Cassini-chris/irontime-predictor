@@ -19,7 +19,7 @@ const TimeSchema = z.object({
   s: z.number().describe('Seconds'),
 });
 
-export const DistributeGoalTimeInputSchema = z.object({
+const DistributeGoalTimeInputSchema = z.object({
   goalTime: TimeSchema.describe('The total goal time for the race.'),
   distance: z
     .enum(['full', 'half', 'olympic', 'sprint'])
@@ -29,7 +29,7 @@ export type DistributeGoalTimeInput = z.infer<
   typeof DistributeGoalTimeInputSchema
 >;
 
-export const DistributeGoalTimeOutputSchema = z.object({
+const DistributeGoalTimeOutputSchema = z.object({
   swimTime: TimeSchema.describe('The calculated swim time.'),
   bikeTime: TimeSchema.describe('The calculated bike time.'),
   runTime: TimeSchema.describe('The calculated run time.'),
