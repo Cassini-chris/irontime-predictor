@@ -22,7 +22,10 @@ import {
   Bike,
   PersonStanding,
   ArrowRightLeft,
+  SlidersHorizontal,
+  Target,
 } from 'lucide-react';
+import { GoalSetter } from './goal-setter';
 
 export type Time = { h: number; m: number; s: number };
 const zeroTime: Time = { h: 0, m: 0, s: 0 };
@@ -51,6 +54,8 @@ export function IronTimePredictor() {
   const [swimInputMode, setSwimInputMode] = useState<'time' | 'pace'>('time');
   const [bikeInputMode, setBikeInputMode] = useState<'time' | 'speed'>('time');
   const [runInputMode, setRunInputMode] = useState<'time' | 'pace'>('time');
+  
+  const [mainMode, setMainMode] = useState<'manual' | 'goal'>('manual');
 
   const [swimPace, setSwimPace] = useState<Pace>({ m: 1, s: 45 });
   const [bikeSpeed, setBikeSpeed] = useState(35);
@@ -114,6 +119,15 @@ export function IronTimePredictor() {
       setRunTime(secondsToTime(totalSeconds));
     }
   }, [runPace, distance, runInputMode]);
+  
+    // When switching to manual mode, reset swim/bike/run times to zero
+    useEffect(() => {
+      if (mainMode === 'manual') {
+        setSwimTime(zeroTime);
+        setBikeTime(zeroTime);
+        setRunTime(zeroTime);
+      }
+    }, [mainMode]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -162,7 +176,7 @@ export function IronTimePredictor() {
               Race Configuration
             </CardTitle>
             <CardDescription>
-              Select a distance, then enter your times, paces, or speeds.
+              Select a distance, then choose your input method.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -181,106 +195,123 @@ export function IronTimePredictor() {
                 ))}
               </RadioGroup>
             </div>
-            <Separator />
-            <div className="flex flex-col pt-2">
-              {/* Swim Section */}
-              <div className="space-y-3">
-                <div className="flex justify-between items-end">
-                  <Label className="flex items-center gap-2 text-xl font-medium font-headline">
-                    <Waves className="text-primary size-6" />
-                    Swim
-                  </Label>
-                  <div className="text-right">
-                    <p className="font-mono text-3xl font-bold tracking-tight text-primary">{formatTime(swimTime)}</p>
-                    <p className="text-xs text-muted-foreground -mt-1">Calculated Time</p>
-                  </div>
-                </div>
-                <Tabs value={swimInputMode} onValueChange={(v) => setSwimInputMode(v as any)} className="w-full">
-                  <TabsList className="grid w-full grid-cols-2"><TabsTrigger value="time">Set Time</TabsTrigger><TabsTrigger value="pace">Set Pace</TabsTrigger></TabsList>
-                  <TabsContent value="time" className="pt-4"><TimeInputGroup time={swimTime} setTime={setSwimTime} /></TabsContent>
-                  <TabsContent value="pace" className="pt-4"><PaceInputGroup unit="min/100m" pace={swimPace} setPace={setSwimPace} /></TabsContent>
-                </Tabs>
-              </div>
-
-              <Separator className="my-6" />
-
-              {/* Transition 1 Section */}
-              <div className="space-y-3">
-                <div className="flex justify-between items-end">
-                  <Label className="flex items-center gap-2 text-xl font-medium font-headline">
-                    <ArrowRightLeft className="text-accent size-6" />
-                    Transition 1
-                  </Label>
-                  <div className="text-right">
-                    <p className="font-mono text-3xl font-bold tracking-tight text-accent">{formatTime(t1Time)}</p>
-                  </div>
-                </div>
-                <TimeInputGroup time={t1Time} setTime={setT1Time} />
-              </div>
-
-              <Separator className="my-6" />
-
-              {/* Bike Section */}
-              <div className="space-y-3">
-                <div className="flex justify-between items-end">
-                  <Label className="flex items-center gap-2 text-xl font-medium font-headline">
-                    <Bike className="text-primary size-6" />
-                    Bike
-                  </Label>
-                  <div className="text-right">
-                    <p className="font-mono text-3xl font-bold tracking-tight text-primary">{formatTime(bikeTime)}</p>
-                    <p className="text-xs text-muted-foreground -mt-1">Calculated Time</p>
-                  </div>
-                </div>
-                <Tabs value={bikeInputMode} onValueChange={(v) => setBikeInputMode(v as any)} className="w-full">
-                  <TabsList className="grid w-full grid-cols-2"><TabsTrigger value="time">Set Time</TabsTrigger><TabsTrigger value="speed">Set Speed</TabsTrigger></TabsList>
-                  <TabsContent value="time" className="pt-4"><TimeInputGroup time={bikeTime} setTime={setBikeTime} /></TabsContent>
-                  <TabsContent value="speed" className="pt-4">
-                    <div className="space-y-2">
-                        <Label className="text-sm font-medium">Speed <span className="text-sm text-muted-foreground">(km/h)</span></Label>
-                        <Input type="number" value={bikeSpeed} onChange={(e) => setBikeSpeed(Number(e.target.value) || 0)} placeholder="e.g. 35" aria-label="Bike speed in km/h" min="0" className="font-mono text-center" />
+            
+            <Tabs value={mainMode} onValueChange={(v) => setMainMode(v as any)} className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="manual"><SlidersHorizontal className="mr-2 h-4 w-4"/>Manual Input</TabsTrigger>
+                    <TabsTrigger value="goal"><Target className="mr-2 h-4 w-4"/>Goal Setter</TabsTrigger>
+                </TabsList>
+                <TabsContent value="manual">
+                    <div className="flex flex-col pt-2">
+                    {/* Swim Section */}
+                    <div className="space-y-3">
+                        <div className="flex justify-between items-end">
+                        <Label className="flex items-center gap-2 text-xl font-medium font-headline">
+                            <Waves className="text-primary size-6" />
+                            Swim
+                        </Label>
+                        <div className="text-right">
+                            <p className="font-mono text-3xl font-bold tracking-tight text-primary">{formatTime(swimTime)}</p>
+                            <p className="text-xs text-muted-foreground -mt-1">Calculated Time</p>
+                        </div>
+                        </div>
+                        <Tabs value={swimInputMode} onValueChange={(v) => setSwimInputMode(v as any)} className="w-full">
+                        <TabsList className="grid w-full grid-cols-2"><TabsTrigger value="time">Set Time</TabsTrigger><TabsTrigger value="pace">Set Pace</TabsTrigger></TabsList>
+                        <TabsContent value="time" className="pt-4"><TimeInputGroup time={swimTime} setTime={setSwimTime} /></TabsContent>
+                        <TabsContent value="pace" className="pt-4"><PaceInputGroup unit="min/100m" pace={swimPace} setPace={setSwimPace} /></TabsContent>
+                        </Tabs>
                     </div>
-                  </TabsContent>
-                </Tabs>
-              </div>
-              
-              <Separator className="my-6" />
 
-              {/* Transition 2 Section */}
-              <div className="space-y-3">
-                <div className="flex justify-between items-end">
-                  <Label className="flex items-center gap-2 text-xl font-medium font-headline">
-                    <ArrowRightLeft className="text-accent size-6" />
-                    Transition 2
-                  </Label>
-                  <div className="text-right">
-                    <p className="font-mono text-3xl font-bold tracking-tight text-accent">{formatTime(t2Time)}</p>
-                  </div>
-                </div>
-                <TimeInputGroup time={t2Time} setTime={setT2Time} />
-              </div>
+                    <Separator className="my-6" />
 
-              <Separator className="my-6" />
+                    {/* Transition 1 Section */}
+                    <div className="space-y-3">
+                        <div className="flex justify-between items-end">
+                        <Label className="flex items-center gap-2 text-xl font-medium font-headline">
+                            <ArrowRightLeft className="text-accent size-6" />
+                            Transition 1
+                        </Label>
+                        <div className="text-right">
+                            <p className="font-mono text-3xl font-bold tracking-tight text-accent">{formatTime(t1Time)}</p>
+                        </div>
+                        </div>
+                        <TimeInputGroup time={t1Time} setTime={setT1Time} />
+                    </div>
 
-              {/* Run Section */}
-              <div className="space-y-3">
-                <div className="flex justify-between items-end">
-                  <Label className="flex items-center gap-2 text-xl font-medium font-headline">
-                    <PersonStanding className="text-primary size-6" />
-                    Run
-                  </Label>
-                  <div className="text-right">
-                    <p className="font-mono text-3xl font-bold tracking-tight text-primary">{formatTime(runTime)}</p>
-                    <p className="text-xs text-muted-foreground -mt-1">Calculated Time</p>
-                  </div>
-                </div>
-                <Tabs value={runInputMode} onValueChange={(v) => setRunInputMode(v as any)} className="w-full">
-                  <TabsList className="grid w-full grid-cols-2"><TabsTrigger value="time">Set Time</TabsTrigger><TabsTrigger value="pace">Set Pace</TabsTrigger></TabsList>
-                  <TabsContent value="time" className="pt-4"><TimeInputGroup time={runTime} setTime={setRunTime} /></TabsContent>
-                  <TabsContent value="pace" className="pt-4"><PaceInputGroup unit="min/km" pace={runPace} setPace={setRunPace} /></TabsContent>
-                </Tabs>
-              </div>
-            </div>
+                    <Separator className="my-6" />
+
+                    {/* Bike Section */}
+                    <div className="space-y-3">
+                        <div className="flex justify-between items-end">
+                        <Label className="flex items-center gap-2 text-xl font-medium font-headline">
+                            <Bike className="text-primary size-6" />
+                            Bike
+                        </Label>
+                        <div className="text-right">
+                            <p className="font-mono text-3xl font-bold tracking-tight text-primary">{formatTime(bikeTime)}</p>
+                            <p className="text-xs text-muted-foreground -mt-1">Calculated Time</p>
+                        </div>
+                        </div>
+                        <Tabs value={bikeInputMode} onValueChange={(v) => setBikeInputMode(v as any)} className="w-full">
+                        <TabsList className="grid w-full grid-cols-2"><TabsTrigger value="time">Set Time</TabsTrigger><TabsTrigger value="speed">Set Speed</TabsTrigger></TabsList>
+                        <TabsContent value="time" className="pt-4"><TimeInputGroup time={bikeTime} setTime={setBikeTime} /></TabsContent>
+                        <TabsContent value="speed" className="pt-4">
+                            <div className="space-y-2">
+                                <Label className="text-sm font-medium">Speed <span className="text-sm text-muted-foreground">(km/h)</span></Label>
+                                <Input type="number" value={bikeSpeed} onChange={(e) => setBikeSpeed(Number(e.target.value) || 0)} placeholder="e.g. 35" aria-label="Bike speed in km/h" min="0" className="font-mono text-center" />
+                            </div>
+                        </TabsContent>
+                        </Tabs>
+                    </div>
+                    
+                    <Separator className="my-6" />
+
+                    {/* Transition 2 Section */}
+                    <div className="space-y-3">
+                        <div className="flex justify-between items-end">
+                        <Label className="flex items-center gap-2 text-xl font-medium font-headline">
+                            <ArrowRightLeft className="text-accent size-6" />
+                            Transition 2
+                        </Label>
+                        <div className="text-right">
+                            <p className="font-mono text-3xl font-bold tracking-tight text-accent">{formatTime(t2Time)}</p>
+                        </div>
+                        </div>
+                        <TimeInputGroup time={t2Time} setTime={setT2Time} />
+                    </div>
+
+                    <Separator className="my-6" />
+
+                    {/* Run Section */}
+                    <div className="space-y-3">
+                        <div className="flex justify-between items-end">
+                        <Label className="flex items-center gap-2 text-xl font-medium font-headline">
+                            <PersonStanding className="text-primary size-6" />
+                            Run
+                        </Label>
+                        <div className="text-right">
+                            <p className="font-mono text-3xl font-bold tracking-tight text-primary">{formatTime(runTime)}</p>
+                            <p className="text-xs text-muted-foreground -mt-1">Calculated Time</p>
+                        </div>
+                        </div>
+                        <Tabs value={runInputMode} onValueChange={(v) => setRunInputMode(v as any)} className="w-full">
+                        <TabsList className="grid w-full grid-cols-2"><TabsTrigger value="time">Set Time</TabsTrigger><TabsTrigger value="pace">Set Pace</TabsTrigger></TabsList>
+                        <TabsContent value="time" className="pt-4"><TimeInputGroup time={runTime} setTime={setRunTime} /></TabsContent>
+                        <TabsContent value="pace" className="pt-4"><PaceInputGroup unit="min/km" pace={runPace} setPace={setRunPace} /></TabsContent>
+                        </Tabs>
+                    </div>
+                    </div>
+                </TabsContent>
+                <TabsContent value="goal">
+                    <GoalSetter 
+                        distance={distance} 
+                        setSwimTime={setSwimTime}
+                        setBikeTime={setBikeTime}
+                        setRunTime={setRunTime}
+                    />
+                </TabsContent>
+            </Tabs>
+
           </CardContent>
         </Card>
 
