@@ -228,8 +228,10 @@ export function PacePlanner({
       const correctionFactor = bikeTotalSeconds / calculatedTotalTime;
 
       const finalSegmentTimes = segmentTimes.map((t) => t * correctionFactor);
+      let cumulativeBikeSeconds = 0;
 
       finalSegmentTimes.forEach((time, index) => {
+        cumulativeBikeSeconds += time;
         const seg = bikeSegments[index];
         const segDist = segmentDistances[index];
         const segSpeed = (segDist / time) * 3600;
@@ -237,7 +239,7 @@ export function PacePlanner({
           segment: `${seg.start.toFixed(1).replace('.0', '')}-${seg.end
             .toFixed(1)
             .replace('.0', '')} km`,
-          targetTime: secondsToTimeStr(time),
+          targetTime: secondsToTimeStr(cumulativeBikeSeconds),
           targetPace: `${segSpeed.toFixed(1)} km/h`,
         });
       });
@@ -263,8 +265,10 @@ export function PacePlanner({
       const correctionFactor = runTotalSeconds / calculatedTotalTime;
 
       const finalSegmentTimes = segmentTimes.map((t) => t * correctionFactor);
+      let cumulativeRunSeconds = 0;
 
       finalSegmentTimes.forEach((time, index) => {
+        cumulativeRunSeconds += time;
         const seg = runSegments[index];
         const segDist = segmentDistances[index];
         const segPace = time / segDist;
@@ -272,7 +276,7 @@ export function PacePlanner({
           segment: `${seg.start.toFixed(1).replace('.0', '')}-${seg.end
             .toFixed(1)
             .replace('.0', '')} km`,
-          targetTime: secondsToTimeStr(time),
+          targetTime: secondsToTimeStr(cumulativeRunSeconds),
           targetPace: formatPace(segPace),
         });
       });
