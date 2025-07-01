@@ -64,7 +64,7 @@ export default function Home() {
                   variant="outline"
                 >
                   <Gift />
-                  I have built this app for Roth 2025 - a PCC initiative
+                  I have built this app for Roth 2025 - PCC initiative
                 </Button>
               </div>
             </header>
