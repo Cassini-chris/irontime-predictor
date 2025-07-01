@@ -308,6 +308,8 @@ export function IronTimePredictor() {
                         setSwimTime={setSwimTime}
                         setBikeTime={setBikeTime}
                         setRunTime={setRunTime}
+                        setT1Time={setT1Time}
+                        setT2Time={setT2Time}
                     />
                 </TabsContent>
             </Tabs>

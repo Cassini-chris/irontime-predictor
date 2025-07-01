@@ -8,16 +8,26 @@ import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from './ui/card';
-import { SlidersHorizontal } from 'lucide-react';
+import {
+  SlidersHorizontal,
+  Waves,
+  Bike,
+  PersonStanding,
+  ArrowRightLeft,
+} from 'lucide-react';
+import { Separator } from './ui/separator';
 
 interface GoalSetterProps {
   distance: 'full' | 'half' | 'olympic' | 'sprint';
   setSwimTime: (time: Time) => void;
   setBikeTime: (time: Time) => void;
   setRunTime: (time: Time) => void;
+  setT1Time: (time: Time) => void;
+  setT2Time: (time: Time) => void;
 }
 
 const secondsToTime = (seconds: number): Time => {
@@ -25,6 +35,13 @@ const secondsToTime = (seconds: number): Time => {
   const m = Math.floor((seconds % 3600) / 60);
   const s = Math.floor(seconds % 60);
   return { h, m, s };
+};
+
+const formatTime = (time: Time) => {
+  return `${String(time.h).padStart(2, '0')}:${String(time.m).padStart(
+    2,
+    '0'
+  )}:${String(time.s).padStart(2, '0')}`;
 };
 
 // These percentages represent the typical distribution of effort *within the three disciplines*.
@@ -44,24 +61,42 @@ const TRANSITION_PERCENTAGE = {
   sprint: 0.05, // ~5%
 };
 
+type CalculatedSplits = {
+  swim: Time;
+  t1: Time;
+  bike: Time;
+  t2: Time;
+  run: Time;
+};
+
 export function GoalSetter({
   distance,
   setSwimTime,
   setBikeTime,
   setRunTime,
+  setT1Time,
+  setT2Time,
 }: GoalSetterProps) {
   const [goalTime, setGoalTime] = useState<Time>({ h: 12, m: 0, s: 0 });
+  const [calculatedSplits, setCalculatedSplits] =
+    useState<CalculatedSplits | null>(null);
 
   const handleDistributeTime = () => {
     const totalSeconds = goalTime.h * 3600 + goalTime.m * 60 + goalTime.s;
 
     if (totalSeconds <= 0) {
-      // Silently fail for invalid input, or add a toast notification if preferred.
+      setCalculatedSplits(null);
       return;
     }
 
-    const transitionTime = totalSeconds * TRANSITION_PERCENTAGE[distance];
-    const availableTimeForDisciplines = totalSeconds - transitionTime;
+    const totalTransitionSeconds = totalSeconds * TRANSITION_PERCENTAGE[distance];
+    const availableTimeForDisciplines = totalSeconds - totalTransitionSeconds;
+
+    // Distribute transition times (e.g., 60% for T1, 40% for T2)
+    const t1Seconds = totalTransitionSeconds * 0.6;
+    const t2Seconds = totalTransitionSeconds * 0.4;
+    const t1Time = secondsToTime(t1Seconds);
+    const t2Time = secondsToTime(t2Seconds);
 
     const disciplineSplits = DISCIPLINE_DISTRIBUTION[distance];
 
@@ -69,9 +104,25 @@ export function GoalSetter({
     const bikeSeconds = availableTimeForDisciplines * disciplineSplits.bike;
     const runSeconds = availableTimeForDisciplines * disciplineSplits.run;
 
-    setSwimTime(secondsToTime(swimSeconds));
-    setBikeTime(secondsToTime(bikeSeconds));
-    setRunTime(secondsToTime(runSeconds));
+    const swimTime = secondsToTime(swimSeconds);
+    const bikeTime = secondsToTime(bikeSeconds);
+    const runTime = secondsToTime(runSeconds);
+
+    // Update parent state to populate the main form
+    setSwimTime(swimTime);
+    setBikeTime(bikeTime);
+    setRunTime(runTime);
+    setT1Time(t1Time);
+    setT2Time(t2Time);
+
+    // Update local state for summary display
+    setCalculatedSplits({
+      swim: swimTime,
+      t1: t1Time,
+      bike: bikeTime,
+      t2: t2Time,
+      run: runTime,
+    });
   };
 
   return (
@@ -90,6 +141,57 @@ export function GoalSetter({
             <SlidersHorizontal className="mr-2 h-4 w-4" /> Distribute Times
           </Button>
         </CardContent>
+
+        {calculatedSplits && (
+          <>
+            <Separator />
+            <CardFooter className="flex flex-col items-start space-y-3 p-6 pt-4">
+              <h4 className="font-medium text-lg w-full text-center mb-2">
+                Suggested Splits
+              </h4>
+              <div className="w-full flex justify-between items-center text-sm">
+                <span className="flex items-center gap-2 text-muted-foreground">
+                  <Waves className="size-5 text-primary" /> Swim
+                </span>
+                <span className="font-mono font-medium text-foreground">
+                  {formatTime(calculatedSplits.swim)}
+                </span>
+              </div>
+              <div className="w-full flex justify-between items-center text-sm">
+                <span className="flex items-center gap-2 text-muted-foreground">
+                  <ArrowRightLeft className="size-5 text-accent" /> T1
+                </span>
+                <span className="font-mono font-medium text-foreground">
+                  {formatTime(calculatedSplits.t1)}
+                </span>
+              </div>
+              <div className="w-full flex justify-between items-center text-sm">
+                <span className="flex items-center gap-2 text-muted-foreground">
+                  <Bike className="size-5 text-primary" /> Bike
+                </span>
+                <span className="font-mono font-medium text-foreground">
+                  {formatTime(calculatedSplits.bike)}
+                </span>
+              </div>
+              <div className="w-full flex justify-between items-center text-sm">
+                <span className="flex items-center gap-2 text-muted-foreground">
+                  <ArrowRightLeft className="size-5 text-accent" /> T2
+                </span>
+                <span className="font-mono font-medium text-foreground">
+                  {formatTime(calculatedSplits.t2)}
+                </span>
+              </div>
+              <div className="w-full flex justify-between items-center text-sm">
+                <span className="flex items-center gap-2 text-muted-foreground">
+                  <PersonStanding className="size-5 text-primary" /> Run
+                </span>
+                <span className="font-mono font-medium text-foreground">
+                  {formatTime(calculatedSplits.run)}
+                </span>
+              </div>
+            </CardFooter>
+          </>
+        )}
       </Card>
     </div>
   );
