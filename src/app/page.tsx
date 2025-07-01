@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { IronTimePredictor } from '@/components/iron-time-predictor';
 import { Logo } from '@/components/icons';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 export default function Home() {
@@ -42,7 +43,7 @@ export default function Home() {
       <div className="flex flex-col min-h-screen bg-background">
         <main className="flex-grow flex flex-col items-center justify-center p-4 sm:p-8 md:p-12 lg:p-24">
           <div className="w-full max-w-6xl space-y-8">
-            <header className="text-center space-y-2 relative">
+            <header className="text-center space-y-4 relative">
               <div className="absolute top-0 right-0">
                 <ThemeToggle />
               </div>
@@ -56,18 +57,21 @@ export default function Home() {
                 A calculator for your Ironman total time. Input your discipline
                 times to predict your finish.
               </p>
+              <div>
+                <Button
+                  onClick={handleEasterEggClick}
+                  variant="link"
+                  className="text-muted-foreground hover:text-primary transition-colors"
+                >
+                  I have built this app for Roth 2025
+                </Button>
+              </div>
             </header>
 
             <IronTimePredictor />
           </div>
         </main>
-        <footer className="w-full py-8 text-center text-muted-foreground text-sm space-y-2">
-          <button
-            onClick={handleEasterEggClick}
-            className="hover:text-primary transition-colors focus:outline-none focus:ring-2 focus:ring-ring rounded-sm px-1"
-          >
-            I have built this app for Roth 2025
-          </button>
+        <footer className="w-full py-8 text-center text-muted-foreground text-sm">
           <p>
             &copy; {new Date().getFullYear()} IronTime Predictor. Unleash your
             potential.
