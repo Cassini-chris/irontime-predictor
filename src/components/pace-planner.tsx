@@ -18,20 +18,13 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Download, FileText, Info } from 'lucide-react';
+import { Download, FileText } from 'lucide-react';
 import type { DistanceKey, Time } from '@/components/iron-time-predictor';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
 
 type Split = {
   segment: string;
   targetTime: string;
   targetPace: string;
-  tip: string;
 };
 
 type PacePlan = {
@@ -63,6 +56,18 @@ const secondsToTimeStr = (totalSeconds: number) => {
     2,
     '0'
   )}:${String(s).padStart(2, '0')}`;
+};
+
+const formatPace = (paceSecPerKm: number) => {
+  let paceMin = Math.floor(paceSecPerKm / 60);
+  let paceSec = Math.round(paceSecPerKm % 60);
+  if (paceSec === 60) {
+    paceMin += 1;
+    paceSec = 0;
+  }
+  return `${String(paceMin).padStart(2, '0')}:${String(
+    paceSec
+  ).padStart(2, '0')} min/km`;
 };
 
 const getBikeSegments = (distanceKey: DistanceKey) => {
@@ -119,25 +124,31 @@ const getRunSegments = (distanceKey: DistanceKey) => {
   }
 };
 
-const bikeTips = [
-  "Settle in and find your rhythm. Don't go out too hard.",
-  'Focus on consistent fueling and hydration. Stick to your plan.',
-  "Maintain a steady cadence. Spin up hills, don't grind.",
-  'Check your posture. Relax your shoulders and upper body.',
-  'Stay mentally focused. Break the ride into manageable chunks.',
-  'Prepare for the transition to the run. Spin your legs a bit faster in the last few km.',
-];
+/**
+ * Generates pace multipliers for a negative split.
+ * @param segmentCount The number of segments.
+ * @param intensity The percentage difference between the first and last segment pace (e.g., 0.03 for 3%).
+ * @returns An array of multipliers that result in a slower-to-faster pace progression.
+ */
+function getNegativeSplitPaceMultipliers(
+  segmentCount: number,
+  intensity: number = 0.03
+): number[] {
+  if (segmentCount <= 1) {
+    return [1];
+  }
+  const multipliers: number[] = [];
+  // Create a decreasing arithmetic series (from slower pace to faster pace)
+  for (let i = 0; i < segmentCount; i++) {
+    const progress = i / (segmentCount - 1); // 0 to 1
+    multipliers.push(1 + intensity / 2 - progress * intensity);
+  }
 
-const runTips = [
-  'Ease into the run off the bike. Find your running legs.',
-  'Focus on good form: run tall, with a slight forward lean.',
-  'Control your breathing. A steady rhythm is key.',
-  'Hydrate at every aid station, even if you don\'t feel thirsty.',
-  'Break the run down mentally. Focus on the next kilometer or aid station.',
-  'Use your mental strength. This is where the race is won or lost.',
-  'Listen to your body, but remember you are stronger than you think.',
-  'Empty the tank in the final stretch. Finish strong!',
-];
+  // Normalize multipliers so their average is 1
+  const sum = multipliers.reduce((a, b) => a + b, 0);
+  const normalizationFactor = segmentCount / sum;
+  return multipliers.map((m) => m * normalizationFactor);
+}
 
 const PlanTable = ({
   title,
@@ -156,8 +167,7 @@ const PlanTable = ({
           <TableRow>
             <TableHead className="w-[100px]">Segment</TableHead>
             <TableHead>Time</TableHead>
-            <TableHead>{paceUnit}</TableHead>
-            <TableHead className="text-right">Tip</TableHead>
+            <TableHead className="text-right">{paceUnit}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -165,21 +175,7 @@ const PlanTable = ({
             <TableRow key={`${title}-${index}`}>
               <TableCell className="font-medium">{split.segment}</TableCell>
               <TableCell>{split.targetTime}</TableCell>
-              <TableCell>{split.targetPace}</TableCell>
-              <TableCell className="text-right">
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <Info className="h-4 w-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p className="max-w-xs">{split.tip}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </TableCell>
+              <TableCell className="text-right">{split.targetPace}</TableCell>
             </TableRow>
           ))}
         </TableBody>
@@ -201,64 +197,83 @@ export function PacePlanner({
     const newBikePlan: Split[] = [];
     const newRunPlan: Split[] = [];
 
+    // Bike Plan (Negative Split - Slower start, faster finish)
     if (bikeTotalSeconds > 0) {
       const bikeTotalDistance = DISTANCES[distance].bike;
       const avgSpeedKmh = bikeTotalDistance / (bikeTotalSeconds / 3600);
       const bikeSegments = getBikeSegments(distance);
 
-      const segmentTimes = bikeSegments.map(
-        (seg) =>
-          ((seg.end - seg.start) / bikeTotalDistance) * bikeTotalSeconds
+      // Slower to faster pace -> Slower to faster speed
+      const paceMultipliers = getNegativeSplitPaceMultipliers(
+        bikeSegments.length,
+        0.02
       );
-      const roundedSeconds = segmentTimes.map((t) => Math.round(t));
-      const sumRounded = roundedSeconds.reduce((a, b) => a + b, 0);
-      const diff = bikeTotalSeconds - sumRounded;
-      if (roundedSeconds.length > 0)
-        roundedSeconds[roundedSeconds.length - 1] += diff;
+      const speedMultipliers = paceMultipliers.map((m) => 1 / m);
 
-      bikeSegments.forEach((seg, index) => {
+      // Normalize speed multipliers
+      const speedSum = speedMultipliers.reduce((a, b) => a + b, 0);
+      const normalizedSpeedMultipliers = speedMultipliers.map(
+        (m) => (m * bikeSegments.length) / speedSum
+      );
+
+      const segmentDistances = bikeSegments.map((seg) => seg.end - seg.start);
+      const segmentSpeeds = normalizedSpeedMultipliers.map(
+        (m) => avgSpeedKmh * m
+      );
+      const segmentTimes = segmentDistances.map(
+        (dist, i) => (dist / segmentSpeeds[i]) * 3600
+      );
+
+      const calculatedTotalTime = segmentTimes.reduce((a, b) => a + b, 0);
+      const correctionFactor = bikeTotalSeconds / calculatedTotalTime;
+
+      const finalSegmentTimes = segmentTimes.map((t) => t * correctionFactor);
+
+      finalSegmentTimes.forEach((time, index) => {
+        const seg = bikeSegments[index];
+        const segDist = segmentDistances[index];
+        const segSpeed = (segDist / time) * 3600;
         newBikePlan.push({
-          segment: `${seg.start}-${seg.end} km`,
-          targetTime: secondsToTimeStr(roundedSeconds[index]),
-          targetPace: `${avgSpeedKmh.toFixed(1)} km/h`,
-          tip: bikeTips[index % bikeTips.length],
+          segment: `${seg.start.toFixed(1).replace('.0', '')}-${seg.end
+            .toFixed(1)
+            .replace('.0', '')} km`,
+          targetTime: secondsToTimeStr(time),
+          targetPace: `${segSpeed.toFixed(1)} km/h`,
         });
       });
     }
 
+    // Run Plan (Negative Split - Slower start, faster finish)
     if (runTotalSeconds > 0) {
       const runTotalDistance = DISTANCES[distance].run;
       const avgPaceSecPerKm = runTotalSeconds / runTotalDistance;
       const runSegments = getRunSegments(distance);
-
-      const segmentTimes = runSegments.map(
-        (seg) => (seg.end - seg.start) * avgPaceSecPerKm
+      const paceMultipliers = getNegativeSplitPaceMultipliers(
+        runSegments.length,
+        0.03
       );
-      const roundedSeconds = segmentTimes.map((t) => Math.round(t));
-      const sumRounded = roundedSeconds.reduce((a, b) => a + b, 0);
-      const diff = runTotalSeconds - sumRounded;
-      if (roundedSeconds.length > 0)
-        roundedSeconds[roundedSeconds.length - 1] += diff;
 
-      let paceMin = Math.floor(avgPaceSecPerKm / 60);
-      let paceSec = Math.round(avgPaceSecPerKm % 60);
-      if (paceSec === 60) {
-        paceMin += 1;
-        paceSec = 0;
-      }
-      const formattedPace = `${String(paceMin).padStart(
-        2,
-        '0'
-      )}:${String(paceSec).padStart(2, '0')} min/km`;
+      const segmentDistances = runSegments.map((seg) => seg.end - seg.start);
+      const segmentPaces = paceMultipliers.map((m) => avgPaceSecPerKm * m);
+      const segmentTimes = segmentDistances.map(
+        (dist, i) => dist * segmentPaces[i]
+      );
 
-      runSegments.forEach((seg, index) => {
+      const calculatedTotalTime = segmentTimes.reduce((a, b) => a + b, 0);
+      const correctionFactor = runTotalSeconds / calculatedTotalTime;
+
+      const finalSegmentTimes = segmentTimes.map((t) => t * correctionFactor);
+
+      finalSegmentTimes.forEach((time, index) => {
+        const seg = runSegments[index];
+        const segDist = segmentDistances[index];
+        const segPace = time / segDist;
         newRunPlan.push({
           segment: `${seg.start.toFixed(1).replace('.0', '')}-${seg.end
             .toFixed(1)
             .replace('.0', '')} km`,
-          targetTime: secondsToTimeStr(roundedSeconds[index]),
-          targetPace: formattedPace,
-          tip: runTips[index % runTips.length],
+          targetTime: secondsToTimeStr(time),
+          targetPace: formatPace(segPace),
         });
       });
     }
@@ -267,13 +282,7 @@ export function PacePlanner({
   };
 
   const toCSV = (plan: PacePlan) => {
-    const headers = [
-      'Discipline',
-      'Segment',
-      'Target Time',
-      'Target Pace/Speed',
-      'Tip',
-    ];
+    const headers = ['Discipline', 'Segment', 'Target Time', 'Target Pace/Speed'];
     const rows = [headers.join(',')];
 
     plan.bikePlan.forEach((split) => {
@@ -283,7 +292,6 @@ export function PacePlanner({
           `"${split.segment}"`,
           `"${split.targetTime}"`,
           `"${split.targetPace}"`,
-          `"${split.tip.replace(/"/g, '""')}"`,
         ].join(',')
       );
     });
@@ -295,7 +303,6 @@ export function PacePlanner({
           `"${split.segment}"`,
           `"${split.targetTime}"`,
           `"${split.targetPace}"`,
-          `"${split.tip.replace(/"/g, '""')}"`,
         ].join(',')
       );
     });
@@ -327,7 +334,7 @@ export function PacePlanner({
           Race Pace Planner
         </CardTitle>
         <CardDescription>
-          Generate a detailed pace card with splits and coaching tips.
+          Generate a detailed negative-split pace card for race day.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -351,28 +358,25 @@ export function PacePlanner({
         {pacePlan && (
           <div className="space-y-6">
             {pacePlan.bikePlan.length > 0 && (
-                <PlanTable
+              <PlanTable
                 title="Bike Pace Plan"
                 splits={pacePlan.bikePlan}
                 paceUnit="Speed"
-                />
+              />
             )}
             {pacePlan.runPlan.length > 0 && (
-                <PlanTable
+              <PlanTable
                 title="Run Pace Plan"
                 splits={pacePlan.runPlan}
                 paceUnit="Pace"
-                />
+              />
             )}
           </div>
         )}
       </CardContent>
       {pacePlan && (
         <CardFooter className="flex justify-between">
-          <Button
-            variant="ghost"
-            onClick={handleGeneratePlan}
-          >
+          <Button variant="ghost" onClick={handleGeneratePlan}>
             Regenerate
           </Button>
           <Button onClick={handleDownload}>
