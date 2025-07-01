@@ -18,13 +18,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Download, FileText, Info, Loader2 } from 'lucide-react';
+import { Download, FileText, Info } from 'lucide-react';
 import type { DistanceKey, Time } from '@/components/iron-time-predictor';
-import {
-  generatePacePlan,
-  type PacePlanOutput,
-} from '@/ai/flows/generate-pace-plan';
-import { useToast } from '@/hooks/use-toast';
 import {
   Tooltip,
   TooltipContent,
@@ -32,13 +27,117 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 
+type Split = {
+  segment: string;
+  targetTime: string;
+  targetPace: string;
+  tip: string;
+};
+
+type PacePlan = {
+  bikePlan: Split[];
+  runPlan: Split[];
+};
+
 interface PacePlannerProps {
   distance: DistanceKey;
   bikeTime: Time;
   runTime: Time;
 }
 
+const DISTANCES = {
+  full: { bike: 180, run: 42.2 },
+  half: { bike: 90, run: 21.1 },
+  olympic: { bike: 40, run: 10 },
+  sprint: { bike: 20, run: 5 },
+};
+
 const timeToSeconds = (time: Time) => time.h * 3600 + time.m * 60 + time.s;
+
+const secondsToTimeStr = (totalSeconds: number) => {
+  const roundedTotalSeconds = Math.round(totalSeconds);
+  const h = Math.floor(roundedTotalSeconds / 3600);
+  const m = Math.floor((roundedTotalSeconds % 3600) / 60);
+  const s = roundedTotalSeconds % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(
+    2,
+    '0'
+  )}:${String(s).padStart(2, '0')}`;
+};
+
+const getBikeSegments = (distanceKey: DistanceKey) => {
+  switch (distanceKey) {
+    case 'full':
+      return Array.from({ length: 6 }, (_, i) => ({
+        start: i * 30,
+        end: (i + 1) * 30,
+      }));
+    case 'half':
+      return Array.from({ length: 4 }, (_, i) => ({
+        start: i * 22.5,
+        end: (i + 1) * 22.5,
+      }));
+    case 'olympic':
+      return Array.from({ length: 4 }, (_, i) => ({
+        start: i * 10,
+        end: (i + 1) * 10,
+      }));
+    case 'sprint':
+      return Array.from({ length: 4 }, (_, i) => ({
+        start: i * 5,
+        end: (i + 1) * 5,
+      }));
+  }
+};
+
+const getRunSegments = (distanceKey: DistanceKey) => {
+  switch (distanceKey) {
+    case 'full':
+      const full_segments = Array.from({ length: 8 }, (_, i) => ({
+        start: i * 5,
+        end: (i + 1) * 5,
+      }));
+      full_segments.push({ start: 40, end: 42.2 });
+      return full_segments;
+    case 'half':
+      const half_segments = Array.from({ length: 4 }, (_, i) => ({
+        start: i * 5,
+        end: (i + 1) * 5,
+      }));
+      half_segments.push({ start: 20, end: 21.1 });
+      return half_segments;
+    case 'olympic':
+      return Array.from({ length: 4 }, (_, i) => ({
+        start: i * 2.5,
+        end: (i + 1) * 2.5,
+      }));
+    case 'sprint':
+      return Array.from({ length: 5 }, (_, i) => ({
+        start: i * 1,
+        end: (i + 1) * 1,
+      }));
+  }
+};
+
+const bikeTips = [
+  "Settle in and find your rhythm. Don't go out too hard.",
+  'Focus on consistent fueling and hydration. Stick to your plan.',
+  "Maintain a steady cadence. Spin up hills, don't grind.",
+  'Check your posture. Relax your shoulders and upper body.',
+  'Stay mentally focused. Break the ride into manageable chunks.',
+  'Prepare for the transition to the run. Spin your legs a bit faster in the last few km.',
+];
+
+const runTips = [
+  'Ease into the run off the bike. Find your running legs.',
+  'Focus on good form: run tall, with a slight forward lean.',
+  'Control your breathing. A steady rhythm is key.',
+  'Hydrate at every aid station, even if you don\'t feel thirsty.',
+  'Break the run down mentally. Focus on the next kilometer or aid station.',
+  'Use your mental strength. This is where the race is won or lost.',
+  'Listen to your body, but remember you are stronger than you think.',
+  'Empty the tank in the final stretch. Finish strong!',
+];
 
 const PlanTable = ({
   title,
@@ -46,7 +145,7 @@ const PlanTable = ({
   paceUnit,
 }: {
   title: string;
-  splits: PacePlanOutput['bikePlan'] | PacePlanOutput['runPlan'];
+  splits: Split[];
   paceUnit: string;
 }) => (
   <div>
@@ -94,39 +193,80 @@ export function PacePlanner({
   bikeTime,
   runTime,
 }: PacePlannerProps) {
-  const [pacePlan, setPacePlan] = useState<PacePlanOutput | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const { toast } = useToast();
+  const [pacePlan, setPacePlan] = useState<PacePlan | null>(null);
 
-  const handleGeneratePlan = async () => {
-    if (timeToSeconds(bikeTime) === 0 && timeToSeconds(runTime) === 0) {
-      toast({
-        variant: 'destructive',
-        title: 'No time entered',
-        description: 'Please enter a bike or run time to generate a pace plan.',
+  const handleGeneratePlan = () => {
+    const bikeTotalSeconds = timeToSeconds(bikeTime);
+    const runTotalSeconds = timeToSeconds(runTime);
+    const newBikePlan: Split[] = [];
+    const newRunPlan: Split[] = [];
+
+    if (bikeTotalSeconds > 0) {
+      const bikeTotalDistance = DISTANCES[distance].bike;
+      const avgSpeedKmh = bikeTotalDistance / (bikeTotalSeconds / 3600);
+      const bikeSegments = getBikeSegments(distance);
+
+      const segmentTimes = bikeSegments.map(
+        (seg) =>
+          ((seg.end - seg.start) / bikeTotalDistance) * bikeTotalSeconds
+      );
+      const roundedSeconds = segmentTimes.map((t) => Math.round(t));
+      const sumRounded = roundedSeconds.reduce((a, b) => a + b, 0);
+      const diff = bikeTotalSeconds - sumRounded;
+      if (roundedSeconds.length > 0)
+        roundedSeconds[roundedSeconds.length - 1] += diff;
+
+      bikeSegments.forEach((seg, index) => {
+        newBikePlan.push({
+          segment: `${seg.start}-${seg.end} km`,
+          targetTime: secondsToTimeStr(roundedSeconds[index]),
+          targetPace: `${avgSpeedKmh.toFixed(1)} km/h`,
+          tip: bikeTips[index % bikeTips.length],
+        });
       });
-      return;
     }
 
-    setIsLoading(true);
-    setPacePlan(null);
-    try {
-      const plan = await generatePacePlan({ distance, bikeTime, runTime });
-      setPacePlan(plan);
-    } catch (error) {
-      console.error('Error generating pace plan:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Error Generating Plan',
-        description:
-          'The AI could not generate a pace plan. This can happen with very fast or slow times. Please adjust and try again.',
+    if (runTotalSeconds > 0) {
+      const runTotalDistance = DISTANCES[distance].run;
+      const avgPaceSecPerKm = runTotalSeconds / runTotalDistance;
+      const runSegments = getRunSegments(distance);
+
+      const segmentTimes = runSegments.map(
+        (seg) => (seg.end - seg.start) * avgPaceSecPerKm
+      );
+      const roundedSeconds = segmentTimes.map((t) => Math.round(t));
+      const sumRounded = roundedSeconds.reduce((a, b) => a + b, 0);
+      const diff = runTotalSeconds - sumRounded;
+      if (roundedSeconds.length > 0)
+        roundedSeconds[roundedSeconds.length - 1] += diff;
+
+      let paceMin = Math.floor(avgPaceSecPerKm / 60);
+      let paceSec = Math.round(avgPaceSecPerKm % 60);
+      if (paceSec === 60) {
+        paceMin += 1;
+        paceSec = 0;
+      }
+      const formattedPace = `${String(paceMin).padStart(
+        2,
+        '0'
+      )}:${String(paceSec).padStart(2, '0')} min/km`;
+
+      runSegments.forEach((seg, index) => {
+        newRunPlan.push({
+          segment: `${seg.start.toFixed(1).replace('.0', '')}-${seg.end
+            .toFixed(1)
+            .replace('.0', '')} km`,
+          targetTime: secondsToTimeStr(roundedSeconds[index]),
+          targetPace: formattedPace,
+          tip: runTips[index % runTips.length],
+        });
       });
-    } finally {
-      setIsLoading(false);
     }
+
+    setPacePlan({ bikePlan: newBikePlan, runPlan: newRunPlan });
   };
 
-  const toCSV = (plan: PacePlanOutput) => {
+  const toCSV = (plan: PacePlan) => {
     const headers = [
       'Discipline',
       'Segment',
@@ -187,18 +327,11 @@ export function PacePlanner({
           Race Pace Planner
         </CardTitle>
         <CardDescription>
-          Generate a detailed pace card with splits and coaching tips from AI.
+          Generate a detailed pace card with splits and coaching tips.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {isLoading && (
-          <div className="flex flex-col items-center justify-center text-muted-foreground space-y-2 h-24">
-            <Loader2 className="h-8 w-8 animate-spin" />
-            <p>AI is generating your race plan...</p>
-          </div>
-        )}
-
-        {!isLoading && !pacePlan && (
+        {!pacePlan && (
           <div className="flex flex-col items-center justify-center text-center space-y-2 h-24">
             <p className="text-muted-foreground">
               {hasTimes
@@ -215,27 +348,30 @@ export function PacePlanner({
           </div>
         )}
 
-        {!isLoading && pacePlan && (
+        {pacePlan && (
           <div className="space-y-6">
-            <PlanTable
-              title="Bike Pace Plan"
-              splits={pacePlan.bikePlan}
-              paceUnit="Speed"
-            />
-            <PlanTable
-              title="Run Pace Plan"
-              splits={pacePlan.runPlan}
-              paceUnit="Pace"
-            />
+            {pacePlan.bikePlan.length > 0 && (
+                <PlanTable
+                title="Bike Pace Plan"
+                splits={pacePlan.bikePlan}
+                paceUnit="Speed"
+                />
+            )}
+            {pacePlan.runPlan.length > 0 && (
+                <PlanTable
+                title="Run Pace Plan"
+                splits={pacePlan.runPlan}
+                paceUnit="Pace"
+                />
+            )}
           </div>
         )}
       </CardContent>
-      {pacePlan && !isLoading && (
+      {pacePlan && (
         <CardFooter className="flex justify-between">
           <Button
             variant="ghost"
             onClick={handleGeneratePlan}
-            disabled={isLoading}
           >
             Regenerate
           </Button>
