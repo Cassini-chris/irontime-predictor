@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import { GoalSetter } from './goal-setter';
 import { BlummenfeltComparison } from './blummenfelt-comparison';
+import { NutritionCalculator } from './nutrition-calculator';
 
 export type Time = { h: number; m: number; s: number };
 const zeroTime: Time = { h: 0, m: 0, s: 0 };
@@ -326,6 +327,7 @@ export function IronTimePredictor() {
             runTime={runTime}
             distance={distance}
           />
+          <NutritionCalculator bikeTime={bikeTime} runTime={runTime} />
           <BlummenfeltComparison totalTime={totalTime} distance={distance} />
         </div>
       </div>
