@@ -60,8 +60,7 @@ export default function Home() {
               <div>
                 <Button
                   onClick={handleEasterEggClick}
-                  variant="link"
-                  className="text-muted-foreground hover:text-primary transition-colors"
+                  variant="outline"
                 >
                   I have built this app for Roth 2025
                 </Button>
