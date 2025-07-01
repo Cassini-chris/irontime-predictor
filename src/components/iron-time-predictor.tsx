@@ -26,6 +26,7 @@ import {
   Target,
 } from 'lucide-react';
 import { GoalSetter } from './goal-setter';
+import { BlummenfeltComparison } from './blummenfelt-comparison';
 
 export type Time = { h: number; m: number; s: number };
 const zeroTime: Time = { h: 0, m: 0, s: 0 };
@@ -338,6 +339,7 @@ export function IronTimePredictor() {
             runTime={runTime}
             distance={distance}
           />
+          <BlummenfeltComparison totalTime={totalTime} distance={distance} />
         </div>
       </div>
     </>
