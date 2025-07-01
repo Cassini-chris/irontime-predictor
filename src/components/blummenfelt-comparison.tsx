@@ -49,7 +49,7 @@ export function BlummenfeltComparison({
           Blummenfelt-Benchmark
         </CardTitle>
         <CardDescription>
-          How do you stack up against the G.O.A.T.? His record for this
+          How do you stack up against the "Norwegians"? His record for this
           distance is {blummenfeltTime}.
         </CardDescription>
       </CardHeader>
