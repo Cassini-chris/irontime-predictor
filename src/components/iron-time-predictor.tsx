@@ -149,7 +149,7 @@ export function IronTimePredictor() {
   return (
     <>
       {!isTotalTimeVisible && (
-        <div className="fixed top-0 left-0 right-0 bg-primary/95 backdrop-blur-sm text-primary-foreground p-3 text-center shadow-lg z-50 animate-in fade-in-50 slide-in-from-top-4 duration-500 lg:hidden">
+        <div className="fixed bottom-0 left-0 right-0 bg-primary/95 backdrop-blur-sm text-primary-foreground p-3 text-center shadow-lg z-50 animate-in fade-in-50 slide-in-from-bottom-4 duration-500 lg:hidden">
           <span className="font-medium text-sm">Predicted Total Time: </span>
           <span className="font-bold font-mono tracking-tighter text-lg">{formatTime(totalTime)}</span>
         </div>
