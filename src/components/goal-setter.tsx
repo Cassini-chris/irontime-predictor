@@ -30,10 +30,10 @@ interface GoalSetterProps {
   setT2Time: (time: Time) => void;
 }
 
-const secondsToTime = (seconds: number): Time => {
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = Math.floor(seconds % 60);
+const secondsToTime = (totalSeconds: number): Time => {
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  const s = Math.floor(totalSeconds % 60);
   return { h, m, s };
 };
 
@@ -91,22 +91,43 @@ export function GoalSetter({
 
     const totalTransitionSeconds = totalSeconds * TRANSITION_PERCENTAGE[distance];
     const availableTimeForDisciplines = totalSeconds - totalTransitionSeconds;
-
-    // Distribute transition times (e.g., 60% for T1, 40% for T2)
-    const t1Seconds = totalTransitionSeconds * 0.6;
-    const t2Seconds = totalTransitionSeconds * 0.4;
-    const t1Time = secondsToTime(t1Seconds);
-    const t2Time = secondsToTime(t2Seconds);
-
     const disciplineSplits = DISCIPLINE_DISTRIBUTION[distance];
 
-    const swimSeconds = availableTimeForDisciplines * disciplineSplits.swim;
-    const bikeSeconds = availableTimeForDisciplines * disciplineSplits.bike;
-    const runSeconds = availableTimeForDisciplines * disciplineSplits.run;
+    // Calculate all splits with floating point precision
+    const rawSplits = {
+      swim: availableTimeForDisciplines * disciplineSplits.swim,
+      t1: totalTransitionSeconds * 0.6,
+      bike: availableTimeForDisciplines * disciplineSplits.bike,
+      t2: totalTransitionSeconds * 0.4,
+      run: availableTimeForDisciplines * disciplineSplits.run,
+    };
 
-    const swimTime = secondsToTime(swimSeconds);
-    const bikeTime = secondsToTime(bikeSeconds);
-    const runTime = secondsToTime(runSeconds);
+    // Round each split to the nearest second
+    const roundedSplitsInSeconds = {
+      swim: Math.round(rawSplits.swim),
+      t1: Math.round(rawSplits.t1),
+      bike: Math.round(rawSplits.bike),
+      t2: Math.round(rawSplits.t2),
+      run: Math.round(rawSplits.run),
+    };
+
+    // Sum the rounded seconds to find any rounding difference
+    const totalRoundedSeconds = Object.values(roundedSplitsInSeconds).reduce(
+      (sum, s) => sum + s,
+      0
+    );
+    const roundingDifference = totalSeconds - totalRoundedSeconds;
+
+    // Adjust the longest discipline (run) to compensate for the rounding error
+    roundedSplitsInSeconds.run += roundingDifference;
+
+    // Convert final second values to Time objects
+    const swimTime = secondsToTime(roundedSplitsInSeconds.swim);
+    const t1Time = secondsToTime(roundedSplitsInSeconds.t1);
+    const bikeTime = secondsToTime(roundedSplitsInSeconds.bike);
+    const t2Time = secondsToTime(roundedSplitsInSeconds.t2);
+    const runTime = secondsToTime(roundedSplitsInSeconds.run);
+
 
     // Update parent state to populate the main form
     setSwimTime(swimTime);
