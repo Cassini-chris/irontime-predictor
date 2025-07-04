@@ -114,7 +114,7 @@ export default function Home() {
               <div>
                 <Button onClick={handleEasterEggClick} variant="outline">
                   <Gift />
-                  I have built this app for Roth 2025 - PCC initiative
+                  I have built this app for Roth 2025
                 </Button>
               </div>
             </header>
