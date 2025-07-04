@@ -75,6 +75,7 @@ const distributeTime = (totalSeconds: number) => {
 
 export function CrystalBall({ onPrediction, onClose }: CrystalBallProps) {
   const [status, setStatus] = useState<'idle' | 'predicting' | 'revealed'>('idle');
+  const [isClosing, setIsClosing] = useState(false);
   const [predictionResult, setPredictionResult] = useState<{
     totalTime: Time;
   } | null>(null);
@@ -112,8 +113,10 @@ export function CrystalBall({ onPrediction, onClose }: CrystalBallProps) {
   useEffect(() => {
     if (status === 'revealed') {
       const timer = setTimeout(() => {
-        onClose();
-      }, 4000); // Stay on screen for 4 seconds after reveal
+        setIsClosing(true);
+        // Unmount after fade-out animation (500ms)
+        setTimeout(onClose, 500); 
+      }, 7500); // Stay on screen for 7.5 seconds before fading
       return () => clearTimeout(timer);
     }
   }, [status, onClose]);
@@ -121,8 +124,10 @@ export function CrystalBall({ onPrediction, onClose }: CrystalBallProps) {
   return (
     <div
       className={cn(
-        'fixed inset-0 z-50 flex flex-col items-center justify-center bg-background/90 backdrop-blur-sm transition-opacity duration-500',
-        status === 'idle' || status === 'predicting' ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        'fixed inset-0 z-50 flex flex-col items-center justify-center bg-background/90 backdrop-blur-sm',
+        isClosing
+          ? 'animate-out fade-out duration-500'
+          : 'animate-in fade-in duration-500'
       )}
     >
       <div className="text-center p-8 space-y-6">
