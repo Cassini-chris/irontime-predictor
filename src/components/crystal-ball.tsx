@@ -110,24 +110,29 @@ export function CrystalBall({ onPrediction, onClose }: CrystalBallProps) {
     }, 2500); // Simulate prediction time
   };
 
+  const handleClose = () => {
+    if (isClosing) return;
+    setIsClosing(true);
+    // Unmount after fade-out animation (500ms)
+    setTimeout(onClose, 500); 
+  };
+
   useEffect(() => {
     if (status === 'revealed') {
-      const timer = setTimeout(() => {
-        setIsClosing(true);
-        // Unmount after fade-out animation (500ms)
-        setTimeout(onClose, 500); 
-      }, 7500); // Stay on screen for 7.5 seconds before fading
+      const timer = setTimeout(handleClose, 7500); // Stay on screen for 7.5 seconds before fading
       return () => clearTimeout(timer);
     }
   }, [status, onClose]);
 
   return (
     <div
+      onClick={status === 'revealed' ? handleClose : undefined}
       className={cn(
         'fixed inset-0 z-50 flex flex-col items-center justify-center bg-background/90 backdrop-blur-sm',
         isClosing
           ? 'animate-out fade-out duration-500'
-          : 'animate-in fade-in duration-500'
+          : 'animate-in fade-in duration-500',
+        status === 'revealed' && 'cursor-pointer'
       )}
     >
       <div className="text-center p-8 space-y-6">
@@ -135,7 +140,7 @@ export function CrystalBall({ onPrediction, onClose }: CrystalBallProps) {
           <div className="animate-in fade-in-0 duration-500 space-y-6">
             <h2 className="text-3xl md:text-4xl font-bold font-headline">What will be your finishing time in Roth?</h2>
             <p className="text-muted-foreground text-lg">Let the crystal ball predict your race destiny.</p>
-            <Button size="lg" onClick={handlePredict}>
+            <Button size="lg" onClick={(e) => { e.stopPropagation(); handlePredict(); } }>
               <Sparkles className="mr-2" />
               Predict My Finish Time
             </Button>
@@ -156,6 +161,7 @@ export function CrystalBall({ onPrediction, onClose }: CrystalBallProps) {
               {formatTime(predictionResult.totalTime)}
             </p>
             <p className="text-3xl font-bold text-accent">An amazing achievement awaits!</p>
+            <p className="text-muted-foreground mt-4 text-sm animate-pulse">Click anywhere to continue</p>
           </div>
         )}
       </div>
