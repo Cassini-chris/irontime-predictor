@@ -13,8 +13,6 @@ interface CrystalBallProps {
     bikeTime: Time;
     t2Time: Time;
     runTime: Time;
-    totalTime: Time;
-    willBeat: boolean;
   }) => void;
   onClose: () => void;
 }
@@ -79,35 +77,33 @@ export function CrystalBall({ onPrediction, onClose }: CrystalBallProps) {
   const [status, setStatus] = useState<'idle' | 'predicting' | 'revealed'>('idle');
   const [predictionResult, setPredictionResult] = useState<{
     totalTime: Time;
-    willBeat: boolean;
   } | null>(null);
 
   const handlePredict = () => {
     setStatus('predicting');
 
     setTimeout(() => {
-      const willBeatXaver = Math.random() < 0.5;
-      const XAVER_TIME_SECONDS = 9 * 3600 + 55 * 60; // 9:55:00
-      const OVER_10H_SECONDS = 10 * 3600;
+      const isSub10Hour = Math.random() < 0.5;
+      const TEN_HOUR_SECONDS = 10 * 3600;
 
       let totalSeconds: number;
 
-      if (willBeatXaver) {
-        // Generate a random time between 8:30:00 and 9:54:59
+      if (isSub10Hour) {
+        // Generate a random time between 8:30:00 and 9:59:59
         const minTime = 8.5 * 3600;
-        totalSeconds = Math.floor(Math.random() * (XAVER_TIME_SECONDS - minTime) + minTime);
+        totalSeconds = Math.floor(Math.random() * (TEN_HOUR_SECONDS - minTime) + minTime);
       } else {
         // Generate a random time between 10:00:01 and 12:00:00
         const maxTime = 12 * 3600;
-        totalSeconds = Math.floor(Math.random() * (maxTime - OVER_10H_SECONDS) + OVER_10H_SECONDS + 1);
+        totalSeconds = Math.floor(Math.random() * (maxTime - TEN_HOUR_SECONDS) + TEN_HOUR_SECONDS + 1);
       }
 
       const totalTime = secondsToTime(totalSeconds);
       const distributedTimes = distributeTime(Math.floor(totalSeconds));
 
-      setPredictionResult({ totalTime, willBeat: willBeatXaver });
+      setPredictionResult({ totalTime });
       
-      onPrediction({ ...distributedTimes, totalTime, willBeat: willBeatXaver });
+      onPrediction(distributedTimes);
 
       setStatus('revealed');
     }, 2500); // Simulate prediction time
@@ -132,11 +128,11 @@ export function CrystalBall({ onPrediction, onClose }: CrystalBallProps) {
       <div className="text-center p-8 space-y-6">
         {status === 'idle' && (
           <div className="animate-in fade-in-0 duration-500 space-y-6">
-            <h2 className="text-3xl md:text-4xl font-bold font-headline">Will you beat Xaver's time?</h2>
-            <p className="text-muted-foreground text-lg">Let the crystal ball decide your fate for Roth 2025.</p>
+            <h2 className="text-3xl md:text-4xl font-bold font-headline">What will be your finishing time in Roth?</h2>
+            <p className="text-muted-foreground text-lg">Let the crystal ball predict your race destiny.</p>
             <Button size="lg" onClick={handlePredict}>
               <Sparkles className="mr-2" />
-              Reveal My Destiny
+              Predict My Finish Time
             </Button>
           </div>
         )}
@@ -149,16 +145,12 @@ export function CrystalBall({ onPrediction, onClose }: CrystalBallProps) {
         )}
 
         {status === 'revealed' && predictionResult && (
-          <div className="animate-in fade-in-0 zoom-in-75 duration-700 space-y-4">
-            <p className="text-2xl font-medium">The crystal ball predicts:</p>
+           <div className="animate-in fade-in-0 zoom-in-75 duration-700 space-y-4">
+            <p className="text-2xl font-medium">Your predicted finish time is:</p>
             <p className="text-6xl md:text-8xl font-bold font-mono text-primary tracking-tighter">
               {formatTime(predictionResult.totalTime)}
             </p>
-            {predictionResult.willBeat ? (
-              <p className="text-3xl font-bold text-green-500">YES! You will beat Xaver's time!</p>
-            ) : (
-              <p className="text-3xl font-bold text-destructive">NO... but there's always next year!</p>
-            )}
+            <p className="text-3xl font-bold text-accent">An amazing achievement awaits!</p>
           </div>
         )}
       </div>
