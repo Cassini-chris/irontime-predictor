@@ -31,7 +31,6 @@ import {
 import { Label } from './ui/label';
 import { Slider } from './ui/slider';
 import { useToast } from '@/hooks/use-toast';
-import { distributeGoalTime } from '@/ai/flows/distribute-goal-time';
 
 interface GoalSetterProps {
   distance: 'full' | 'half' | 'olympic' | 'sprint';
@@ -58,6 +57,67 @@ type CalculatedSplits = {
   run: Time;
 };
 
+const secondsToTime = (secs: number): Time => {
+    const roundedSecs = Math.max(0, Math.round(secs));
+    return {
+        h: Math.floor(roundedSecs / 3600),
+        m: Math.floor((roundedSecs % 3600) / 60),
+        s: roundedSecs % 60,
+    };
+};
+
+const distributeGoalTimeStatistically = (
+    goalTime: Time,
+    distance: 'full' | 'half' | 'olympic' | 'sprint',
+    courseProfile: string,
+    athleteBias: number
+): { swimTime: Time; bikeTime: Time; runTime: Time; t1Time: Time; t2Time: Time } => {
+    const totalSeconds = goalTime.h * 3600 + goalTime.m * 60 + goalTime.s;
+
+    const transitionPercentages = { full: 0.025, half: 0.03, olympic: 0.04, sprint: 0.05 };
+    const totalTransitionSeconds = totalSeconds * transitionPercentages[distance];
+    const t1Seconds = totalTransitionSeconds * 0.6;
+    const t2Seconds = totalTransitionSeconds * 0.4;
+    
+    const availableTime = totalSeconds - totalTransitionSeconds;
+    
+    const baseSplits = { full: { swim: 0.11, bike: 0.53, run: 0.36 }, half: { swim: 0.10, bike: 0.52, run: 0.38 }, olympic: { swim: 0.15, bike: 0.50, run: 0.35 }, sprint: { swim: 0.15, bike: 0.50, run: 0.35 } };
+    let { swim, bike, run } = baseSplits[distance];
+    
+    const courseModifiers: { [key: string]: { bike: number, run: number } } = { flat: { bike: -0.03, run: -0.01 }, rolling: { bike: 0, run: 0 }, hilly: { bike: 0.03, run: 0.01 }, extreme: { bike: 0.05, run: 0.02 } };
+    bike += courseModifiers[courseProfile].bike;
+    run += courseModifiers[courseProfile].run;
+    swim = 1 - bike - run;
+
+    const bias = (athleteBias - 50) / 50; // -1 (swim/bike) to +1 (run)
+    const biasModifier = Math.min(swim, bike, run) * 0.2;
+    if (bias < 0) { // Stronger swim/biker
+        run += biasModifier * Math.abs(bias);
+        bike -= (biasModifier * Math.abs(bias)) * 0.5;
+        swim -= (biasModifier * Math.abs(bias)) * 0.5;
+    } else { // Stronger runner
+        run -= biasModifier * bias;
+        bike += (biasModifier * bias) * 0.5;
+        swim += (biasModifier * bias) * 0.5;
+    }
+    const total = swim + bike + run;
+    swim /= total;
+    bike /= total;
+    run /= total;
+
+    const swimSeconds = availableTime * swim;
+    const bikeSeconds = availableTime * bike;
+    const runSeconds = availableTime * run;
+
+    return {
+        swimTime: secondsToTime(swimSeconds),
+        bikeTime: secondsToTime(bikeSeconds),
+        runTime: secondsToTime(runSeconds),
+        t1Time: secondsToTime(t1Seconds),
+        t2Time: secondsToTime(t2Seconds),
+    };
+};
+
 export function GoalSetter({
   distance,
   setSwimTime,
@@ -75,7 +135,7 @@ export function GoalSetter({
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  const handleDistributeTime = async () => {
+  const handleDistributeTime = () => {
     const totalSeconds = goalTime.h * 3600 + goalTime.m * 60 + goalTime.s;
     if (totalSeconds <= 0) {
       setCalculatedSplits(null);
@@ -86,27 +146,12 @@ export function GoalSetter({
     setCalculatedSplits(null);
 
     try {
-      const { swimTime, bikeTime, runTime } = await distributeGoalTime({
+      const { swimTime, bikeTime, runTime, t1Time, t2Time } = distributeGoalTimeStatistically(
         goalTime,
         distance,
         courseProfile,
         athleteBias,
-      });
-
-      // Simple transition time estimation (2.5% of total for full, scaling up)
-      const transitionPercentages = { full: 0.025, half: 0.03, olympic: 0.04, sprint: 0.05 };
-      const totalTransitionSeconds = totalSeconds * transitionPercentages[distance];
-      const t1Seconds = Math.round(totalTransitionSeconds * 0.6);
-      const t2Seconds = Math.round(totalTransitionSeconds * 0.4);
-      
-      const secondsToTime = (secs: number): Time => ({
-        h: Math.floor(secs / 3600),
-        m: Math.floor((secs % 3600) / 60),
-        s: secs % 60,
-      });
-
-      const t1Time = secondsToTime(t1Seconds);
-      const t2Time = secondsToTime(t2Seconds);
+      );
 
       setSwimTime(swimTime);
       setBikeTime(bikeTime);
