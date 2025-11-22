@@ -122,7 +122,7 @@ export function CrystalBall({ onPrediction, onClose }: CrystalBallProps) {
       const timer = setTimeout(handleClose, 7500); // Stay on screen for 7.5 seconds before fading
       return () => clearTimeout(timer);
     }
-  }, [status, onClose]);
+  }, [status]);
 
   return (
     <div
@@ -138,7 +138,6 @@ export function CrystalBall({ onPrediction, onClose }: CrystalBallProps) {
       <div className="text-center p-8 space-y-6">
         {status === 'idle' && (
           <div className="animate-in fade-in-0 duration-500 space-y-6">
-            <h2 className="text-3xl md:text-4xl font-bold font-headline">What will be your finishing time in Roth?</h2>
             <p className="text-muted-foreground text-lg">Let the crystal ball predict your race destiny.</p>
             <Button size="lg" onClick={(e) => { e.stopPropagation(); handlePredict(); } }>
               <Sparkles className="mr-2" />
