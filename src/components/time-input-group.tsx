@@ -8,14 +8,12 @@ type Time = { h: number; m: number; s: number };
 
 interface TimeInputGroupProps {
   label?: string;
-  icon?: React.ReactNode;
   time: Time;
   setTime: (time: Time) => void;
 }
 
 export function TimeInputGroup({
   label,
-  icon,
   time,
   setTime,
 }: TimeInputGroupProps) {
@@ -41,9 +39,8 @@ export function TimeInputGroup({
 
   return (
     <div className="space-y-2">
-      {label && icon && (
-        <Label className="flex items-center gap-2 text-lg font-medium">
-          {icon}
+      {label && (
+        <Label className="font-medium">
           {label}
         </Label>
       )}

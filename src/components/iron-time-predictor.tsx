@@ -31,7 +31,7 @@ import {
   Target,
 } from 'lucide-react';
 import { GoalSetter } from './goal-setter';
-import { BlummenfeltComparison } from './blummenfelt-comparison';
+import { ProComparison } from './pro-comparison';
 import { NutritionCalculator } from './nutrition-calculator';
 import { PacePlanner } from './pace-planner';
 
@@ -441,6 +441,7 @@ export function IronTimePredictor({
                   setRunTime={setRunTime}
                   setT1Time={setT1Time}
                   setT2Time={setT2Time}
+                  setMainMode={setMainMode}
                 />
               </TabsContent>
             </Tabs>
@@ -477,7 +478,7 @@ export function IronTimePredictor({
             bikeTime={bikeTime}
             runTime={runTime}
           />
-          <BlummenfeltComparison totalTime={totalTime} distance={distance} />
+          <ProComparison totalTime={totalTime} distance={distance} />
         </div>
       </div>
     </>

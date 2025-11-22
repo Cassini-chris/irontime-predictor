@@ -18,8 +18,20 @@ import {
   Bike,
   PersonStanding,
   ArrowRightLeft,
+  Loader2,
 } from 'lucide-react';
 import { Separator } from './ui/separator';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from './ui/select';
+import { Label } from './ui/label';
+import { Slider } from './ui/slider';
+import { useToast } from '@/hooks/use-toast';
+import { distributeGoalTime } from '@/ai/flows/distribute-goal-time';
 
 interface GoalSetterProps {
   distance: 'full' | 'half' | 'olympic' | 'sprint';
@@ -28,37 +40,14 @@ interface GoalSetterProps {
   setRunTime: (time: Time) => void;
   setT1Time: (time: Time) => void;
   setT2Time: (time: Time) => void;
+  setMainMode: (mode: 'manual' | 'goal') => void;
 }
-
-const secondsToTime = (totalSeconds: number): Time => {
-  const h = Math.floor(totalSeconds / 3600);
-  const m = Math.floor((totalSeconds % 3600) / 60);
-  const s = Math.floor(totalSeconds % 60);
-  return { h, m, s };
-};
 
 const formatTime = (time: Time) => {
   return `${String(time.h).padStart(2, '0')}:${String(time.m).padStart(
     2,
     '0'
   )}:${String(time.s).padStart(2, '0')}`;
-};
-
-// These percentages represent the typical distribution of effort *within the three disciplines*.
-// Transition times are handled separately.
-const DISCIPLINE_DISTRIBUTION = {
-  full: { swim: 0.12, bike: 0.55, run: 0.33 },
-  half: { swim: 0.11, bike: 0.56, run: 0.33 },
-  olympic: { swim: 0.15, bike: 0.5, run: 0.35 },
-  sprint: { swim: 0.16, bike: 0.5, run: 0.34 },
-};
-
-// Transition times as a percentage of the total goal time. Longer races typically have proportionally shorter transitions.
-const TRANSITION_PERCENTAGE = {
-  full: 0.025, // ~2.5%
-  half: 0.03, // ~3%
-  olympic: 0.04, // ~4%
-  sprint: 0.05, // ~5%
 };
 
 type CalculatedSplits = {
@@ -76,75 +65,89 @@ export function GoalSetter({
   setRunTime,
   setT1Time,
   setT2Time,
+  setMainMode,
 }: GoalSetterProps) {
   const [goalTime, setGoalTime] = useState<Time>({ h: 12, m: 0, s: 0 });
   const [calculatedSplits, setCalculatedSplits] =
     useState<CalculatedSplits | null>(null);
+  const [courseProfile, setCourseProfile] = useState<string>('rolling');
+  const [athleteBias, setAthleteBias] = useState<number>(50);
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
 
-  const handleDistributeTime = () => {
+  const handleDistributeTime = async () => {
     const totalSeconds = goalTime.h * 3600 + goalTime.m * 60 + goalTime.s;
-
     if (totalSeconds <= 0) {
       setCalculatedSplits(null);
       return;
     }
 
-    const totalTransitionSeconds = totalSeconds * TRANSITION_PERCENTAGE[distance];
-    const availableTimeForDisciplines = totalSeconds - totalTransitionSeconds;
-    const disciplineSplits = DISCIPLINE_DISTRIBUTION[distance];
+    setIsLoading(true);
+    setCalculatedSplits(null);
 
-    // Calculate all splits with floating point precision
-    const rawSplits = {
-      swim: availableTimeForDisciplines * disciplineSplits.swim,
-      t1: totalTransitionSeconds * 0.6,
-      bike: availableTimeForDisciplines * disciplineSplits.bike,
-      t2: totalTransitionSeconds * 0.4,
-      run: availableTimeForDisciplines * disciplineSplits.run,
-    };
+    try {
+      const { swimTime, bikeTime, runTime } = await distributeGoalTime({
+        goalTime,
+        distance,
+        courseProfile,
+        athleteBias,
+      });
 
-    // Round each split to the nearest second
-    const roundedSplitsInSeconds = {
-      swim: Math.round(rawSplits.swim),
-      t1: Math.round(rawSplits.t1),
-      bike: Math.round(rawSplits.bike),
-      t2: Math.round(rawSplits.t2),
-      run: Math.round(rawSplits.run),
-    };
+      // Simple transition time estimation (2.5% of total for full, scaling up)
+      const transitionPercentages = { full: 0.025, half: 0.03, olympic: 0.04, sprint: 0.05 };
+      const totalTransitionSeconds = totalSeconds * transitionPercentages[distance];
+      const t1Seconds = Math.round(totalTransitionSeconds * 0.6);
+      const t2Seconds = Math.round(totalTransitionSeconds * 0.4);
+      
+      const secondsToTime = (secs: number): Time => ({
+        h: Math.floor(secs / 3600),
+        m: Math.floor((secs % 3600) / 60),
+        s: secs % 60,
+      });
 
-    // Sum the rounded seconds to find any rounding difference
-    const totalRoundedSeconds = Object.values(roundedSplitsInSeconds).reduce(
-      (sum, s) => sum + s,
-      0
-    );
-    const roundingDifference = totalSeconds - totalRoundedSeconds;
+      const t1Time = secondsToTime(t1Seconds);
+      const t2Time = secondsToTime(t2Seconds);
 
-    // Adjust the longest discipline (run) to compensate for the rounding error
-    roundedSplitsInSeconds.run += roundingDifference;
+      setSwimTime(swimTime);
+      setBikeTime(bikeTime);
+      setRunTime(runTime);
+      setT1Time(t1Time);
+      setT2Time(t2Time);
 
-    // Convert final second values to Time objects
-    const swimTime = secondsToTime(roundedSplitsInSeconds.swim);
-    const t1Time = secondsToTime(roundedSplitsInSeconds.t1);
-    const bikeTime = secondsToTime(roundedSplitsInSeconds.bike);
-    const t2Time = secondsToTime(roundedSplitsInSeconds.t2);
-    const runTime = secondsToTime(roundedSplitsInSeconds.run);
+      setCalculatedSplits({
+        swim: swimTime,
+        bike: bikeTime,
+        run: runTime,
+        t1: t1Time,
+        t2: t2Time,
+      });
+      
+      // Switch back to manual input tab to show results
+      toast({
+        title: 'Plan Generated!',
+        description: 'Your new time splits have been populated.',
+      });
+      setMainMode('manual');
 
-
-    // Update parent state to populate the main form
-    setSwimTime(swimTime);
-    setBikeTime(bikeTime);
-    setRunTime(runTime);
-    setT1Time(t1Time);
-    setT2Time(t2Time);
-
-    // Update local state for summary display
-    setCalculatedSplits({
-      swim: swimTime,
-      t1: t1Time,
-      bike: bikeTime,
-      t2: t2Time,
-      run: runTime,
-    });
+    } catch (error) {
+      console.error('Error distributing time:', error);
+      toast({
+        variant: 'destructive',
+        title: 'An error occurred',
+        description:
+          'Could not generate splits. Please try again.',
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  const biasLabel =
+    athleteBias === 50
+      ? 'Balanced'
+      : athleteBias < 50
+      ? `Swim-Bike Focus`
+      : `Run Focus`;
 
   return (
     <div className="space-y-6 pt-4">
@@ -152,18 +155,62 @@ export function GoalSetter({
         <CardHeader>
           <CardTitle>Set Your Goal</CardTitle>
           <CardDescription>
-            Enter your target finish time, and we'll create a balanced plan for
-            you.
+            Enter your target finish time and parameters, and let our AI coach
+            create a balanced plan.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <TimeInputGroup time={goalTime} setTime={setGoalTime} />
-          <Button onClick={handleDistributeTime} className="w-full">
-            <SlidersHorizontal className="mr-2 h-4 w-4" /> Distribute Times
+        <CardContent className="space-y-6">
+          <TimeInputGroup label="Target Time" time={goalTime} setTime={setGoalTime} />
+
+          <div className="space-y-2">
+            <Label htmlFor="course-profile">Course Profile</Label>
+            <Select
+              value={courseProfile}
+              onValueChange={setCourseProfile}
+            >
+              <SelectTrigger id="course-profile">
+                <SelectValue placeholder="Select course profile" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="flat">Flat & Fast</SelectItem>
+                <SelectItem value="rolling">Rolling Hills</SelectItem>
+                <SelectItem value="hilly">Hilly</SelectItem>
+                <SelectItem value="extreme">Extreme / Mountainous</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex justify-between items-center">
+              <Label htmlFor="athlete-bias">Athlete Bias</Label>
+              <span className="text-xs font-medium text-muted-foreground">{biasLabel}</span>
+            </div>
+             <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                <span>Strong Swimmer/Biker</span>
+                <Slider
+                    id="athlete-bias"
+                    min={0}
+                    max={100}
+                    step={5}
+                    value={[athleteBias]}
+                    onValueChange={(value) => setAthleteBias(value[0])}
+                    className="flex-1"
+                />
+                <span>Strong Runner</span>
+            </div>
+          </div>
+
+          <Button onClick={handleDistributeTime} className="w-full" disabled={isLoading}>
+            {isLoading ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <SlidersHorizontal className="mr-2 h-4 w-4" />
+            )}
+            Generate Plan
           </Button>
         </CardContent>
 
-        {calculatedSplits && (
+        {calculatedSplits && !isLoading && (
           <>
             <Separator />
             <CardFooter className="flex flex-col items-start space-y-3 p-6 pt-4">
