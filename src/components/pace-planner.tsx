@@ -18,19 +18,10 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Download, FileText } from 'lucide-react';
+import { Download, FileText, Loader2 } from 'lucide-react';
 import type { DistanceKey, Time } from '@/components/iron-time-predictor';
-
-type Split = {
-  segment: string;
-  targetTime: string;
-  targetPace: string;
-};
-
-type PacePlan = {
-  bikePlan: Split[];
-  runPlan: Split[];
-};
+import { generatePacePlan, type PacePlanOutput } from '@/ai/flows/generate-pace-plan';
+import { useToast } from '@/hooks/use-toast';
 
 interface PacePlannerProps {
   distance: DistanceKey;
@@ -38,117 +29,14 @@ interface PacePlannerProps {
   runTime: Time;
 }
 
-const DISTANCES = {
-  full: { bike: 180, run: 42.2 },
-  half: { bike: 90, run: 21.1 },
-  olympic: { bike: 40, run: 10 },
-  sprint: { bike: 20, run: 5 },
-};
-
 const timeToSeconds = (time: Time) => time.h * 3600 + time.m * 60 + time.s;
 
-const secondsToTimeStr = (totalSeconds: number) => {
-  const roundedTotalSeconds = Math.round(totalSeconds);
-  const h = Math.floor(roundedTotalSeconds / 3600);
-  const m = Math.floor((roundedTotalSeconds % 3600) / 60);
-  const s = roundedTotalSeconds % 60;
-  return `${String(h).padStart(2, '0')}:${String(m).padStart(
-    2,
-    '0'
-  )}:${String(s).padStart(2, '0')}`;
+type Split = {
+    segment: string;
+    targetTime: string;
+    targetPace: string;
+    tip: string;
 };
-
-const formatPace = (paceSecPerKm: number) => {
-  let paceMin = Math.floor(paceSecPerKm / 60);
-  let paceSec = Math.round(paceSecPerKm % 60);
-  if (paceSec === 60) {
-    paceMin += 1;
-    paceSec = 0;
-  }
-  return `${String(paceMin).padStart(2, '0')}:${String(
-    paceSec
-  ).padStart(2, '0')} min/km`;
-};
-
-const getBikeSegments = (distanceKey: DistanceKey) => {
-  switch (distanceKey) {
-    case 'full':
-      return Array.from({ length: 6 }, (_, i) => ({
-        start: i * 30,
-        end: (i + 1) * 30,
-      }));
-    case 'half':
-      return Array.from({ length: 4 }, (_, i) => ({
-        start: i * 22.5,
-        end: (i + 1) * 22.5,
-      }));
-    case 'olympic':
-      return Array.from({ length: 4 }, (_, i) => ({
-        start: i * 10,
-        end: (i + 1) * 10,
-      }));
-    case 'sprint':
-      return Array.from({ length: 4 }, (_, i) => ({
-        start: i * 5,
-        end: (i + 1) * 5,
-      }));
-  }
-};
-
-const getRunSegments = (distanceKey: DistanceKey) => {
-  switch (distanceKey) {
-    case 'full':
-      const full_segments = Array.from({ length: 8 }, (_, i) => ({
-        start: i * 5,
-        end: (i + 1) * 5,
-      }));
-      full_segments.push({ start: 40, end: 42.2 });
-      return full_segments;
-    case 'half':
-      const half_segments = Array.from({ length: 4 }, (_, i) => ({
-        start: i * 5,
-        end: (i + 1) * 5,
-      }));
-      half_segments.push({ start: 20, end: 21.1 });
-      return half_segments;
-    case 'olympic':
-      return Array.from({ length: 4 }, (_, i) => ({
-        start: i * 2.5,
-        end: (i + 1) * 2.5,
-      }));
-    case 'sprint':
-      return Array.from({ length: 5 }, (_, i) => ({
-        start: i * 1,
-        end: (i + 1) * 1,
-      }));
-  }
-};
-
-/**
- * Generates pace multipliers for a negative split.
- * @param segmentCount The number of segments.
- * @param intensity The percentage difference between the first and last segment pace (e.g., 0.03 for 3%).
- * @returns An array of multipliers that result in a slower-to-faster pace progression.
- */
-function getNegativeSplitPaceMultipliers(
-  segmentCount: number,
-  intensity: number = 0.03
-): number[] {
-  if (segmentCount <= 1) {
-    return [1];
-  }
-  const multipliers: number[] = [];
-  // Create a decreasing arithmetic series (from slower pace to faster pace)
-  for (let i = 0; i < segmentCount; i++) {
-    const progress = i / (segmentCount - 1); // 0 to 1
-    multipliers.push(1 + intensity / 2 - progress * intensity);
-  }
-
-  // Normalize multipliers so their average is 1
-  const sum = multipliers.reduce((a, b) => a + b, 0);
-  const normalizationFactor = segmentCount / sum;
-  return multipliers.map((m) => m * normalizationFactor);
-}
 
 const PlanTable = ({
   title,
@@ -166,16 +54,16 @@ const PlanTable = ({
         <TableHeader>
           <TableRow>
             <TableHead className="w-[100px]">Segment</TableHead>
-            <TableHead>Time</TableHead>
-            <TableHead className="text-right">{paceUnit}</TableHead>
+            <TableHead>{paceUnit}</TableHead>
+            <TableHead className="hidden sm:table-cell">Tip</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {splits.map((split, index) => (
             <TableRow key={`${title}-${index}`}>
               <TableCell className="font-medium">{split.segment}</TableCell>
-              <TableCell>{split.targetTime}</TableCell>
-              <TableCell className="text-right">{split.targetPace}</TableCell>
+              <TableCell>{split.targetPace}</TableCell>
+              <TableCell className="hidden sm:table-cell">{split.tip}</TableCell>
             </TableRow>
           ))}
         </TableBody>
@@ -189,104 +77,30 @@ export function PacePlanner({
   bikeTime,
   runTime,
 }: PacePlannerProps) {
-  const [pacePlan, setPacePlan] = useState<PacePlan | null>(null);
+  const [pacePlan, setPacePlan] = useState<PacePlanOutput | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
 
-  const handleGeneratePlan = () => {
-    const bikeTotalSeconds = timeToSeconds(bikeTime);
-    const runTotalSeconds = timeToSeconds(runTime);
-    const newBikePlan: Split[] = [];
-    const newRunPlan: Split[] = [];
-
-    // Bike Plan (Negative Split - Slower start, faster finish)
-    if (bikeTotalSeconds > 0) {
-      const bikeTotalDistance = DISTANCES[distance].bike;
-      const avgSpeedKmh = bikeTotalDistance / (bikeTotalSeconds / 3600);
-      const bikeSegments = getBikeSegments(distance);
-
-      // Slower to faster pace -> Slower to faster speed
-      const paceMultipliers = getNegativeSplitPaceMultipliers(
-        bikeSegments.length,
-        0.02
-      );
-      const speedMultipliers = paceMultipliers.map((m) => 1 / m);
-
-      // Normalize speed multipliers
-      const speedSum = speedMultipliers.reduce((a, b) => a + b, 0);
-      const normalizedSpeedMultipliers = speedMultipliers.map(
-        (m) => (m * bikeSegments.length) / speedSum
-      );
-
-      const segmentDistances = bikeSegments.map((seg) => seg.end - seg.start);
-      const segmentSpeeds = normalizedSpeedMultipliers.map(
-        (m) => avgSpeedKmh * m
-      );
-      const segmentTimes = segmentDistances.map(
-        (dist, i) => (dist / segmentSpeeds[i]) * 3600
-      );
-
-      const calculatedTotalTime = segmentTimes.reduce((a, b) => a + b, 0);
-      const correctionFactor = bikeTotalSeconds / calculatedTotalTime;
-
-      const finalSegmentTimes = segmentTimes.map((t) => t * correctionFactor);
-      let cumulativeBikeSeconds = 0;
-
-      finalSegmentTimes.forEach((time, index) => {
-        cumulativeBikeSeconds += time;
-        const seg = bikeSegments[index];
-        const segDist = segmentDistances[index];
-        const segSpeed = (segDist / time) * 3600;
-        newBikePlan.push({
-          segment: `${seg.start.toFixed(1).replace('.0', '')}-${seg.end
-            .toFixed(1)
-            .replace('.0', '')} km`,
-          targetTime: secondsToTimeStr(cumulativeBikeSeconds),
-          targetPace: `${segSpeed.toFixed(1)} km/h`,
-        });
+  const handleGeneratePlan = async () => {
+    setIsLoading(true);
+    setPacePlan(null);
+    try {
+      const plan = await generatePacePlan({ distance, bikeTime, runTime });
+      setPacePlan(plan);
+    } catch (error) {
+      console.error('Error generating pace plan:', error);
+      toast({
+        variant: 'destructive',
+        title: 'An error occurred',
+        description: 'Could not generate a pace plan. Please try again.',
       });
+    } finally {
+      setIsLoading(false);
     }
-
-    // Run Plan (Negative Split - Slower start, faster finish)
-    if (runTotalSeconds > 0) {
-      const runTotalDistance = DISTANCES[distance].run;
-      const avgPaceSecPerKm = runTotalSeconds / runTotalDistance;
-      const runSegments = getRunSegments(distance);
-      const paceMultipliers = getNegativeSplitPaceMultipliers(
-        runSegments.length,
-        0.03
-      );
-
-      const segmentDistances = runSegments.map((seg) => seg.end - seg.start);
-      const segmentPaces = paceMultipliers.map((m) => avgPaceSecPerKm * m);
-      const segmentTimes = segmentDistances.map(
-        (dist, i) => dist * segmentPaces[i]
-      );
-
-      const calculatedTotalTime = segmentTimes.reduce((a, b) => a + b, 0);
-      const correctionFactor = runTotalSeconds / calculatedTotalTime;
-
-      const finalSegmentTimes = segmentTimes.map((t) => t * correctionFactor);
-      let cumulativeRunSeconds = 0;
-
-      finalSegmentTimes.forEach((time, index) => {
-        cumulativeRunSeconds += time;
-        const seg = runSegments[index];
-        const segDist = segmentDistances[index];
-        const segPace = time / segDist;
-        newRunPlan.push({
-          segment: `${seg.start.toFixed(1).replace('.0', '')}-${seg.end
-            .toFixed(1)
-            .replace('.0', '')} km`,
-          targetTime: secondsToTimeStr(cumulativeRunSeconds),
-          targetPace: formatPace(segPace),
-        });
-      });
-    }
-
-    setPacePlan({ bikePlan: newBikePlan, runPlan: newRunPlan });
   };
 
-  const toCSV = (plan: PacePlan) => {
-    const headers = ['Discipline', 'Segment', 'Target Time', 'Target Pace/Speed'];
+  const toCSV = (plan: PacePlanOutput) => {
+    const headers = ['Discipline', 'Segment', 'Target Pace/Speed', 'Tip'];
     const rows = [headers.join(',')];
 
     plan.bikePlan.forEach((split) => {
@@ -294,8 +108,8 @@ export function PacePlanner({
         [
           'Bike',
           `"${split.segment}"`,
-          `"${split.targetTime}"`,
           `"${split.targetPace}"`,
+          `"${split.tip.replace(/"/g, '""')}"`,
         ].join(',')
       );
     });
@@ -305,8 +119,8 @@ export function PacePlanner({
         [
           'Run',
           `"${split.segment}"`,
-          `"${split.targetTime}"`,
           `"${split.targetPace}"`,
+          `"${split.tip.replace(/"/g, '""')}"`,
         ].join(',')
       );
     });
@@ -335,14 +149,15 @@ export function PacePlanner({
       <CardHeader>
         <CardTitle className="text-2xl font-headline tracking-tight flex items-center gap-2">
           <FileText className="text-primary" />
-          Race Pace Planner
+          AI Race Pace Planner
         </CardTitle>
         <CardDescription>
-          Generate a detailed negative-split pace card for race day.
+          Let our AI coach generate a detailed negative-split pace card for
+          race day.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {!pacePlan && (
+        {!pacePlan && !isLoading && (
           <div className="flex flex-col items-center justify-center text-center space-y-2 h-24">
             <p className="text-muted-foreground">
               {hasTimes
@@ -351,15 +166,26 @@ export function PacePlanner({
             </p>
             <Button
               onClick={handleGeneratePlan}
-              disabled={!hasTimes}
+              disabled={!hasTimes || isLoading}
               className="w-full"
             >
-              Generate Pace Plan
+              {isLoading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                'Generate AI Pace Plan'
+              )}
             </Button>
           </div>
         )}
 
-        {pacePlan && (
+        {isLoading && (
+          <div className="flex items-center justify-center h-24 space-x-2">
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            <p className="text-muted-foreground">AI is generating your plan...</p>
+          </div>
+        )}
+
+        {pacePlan && !isLoading && (
           <div className="space-y-6">
             {pacePlan.bikePlan.length > 0 && (
               <PlanTable
@@ -378,10 +204,14 @@ export function PacePlanner({
           </div>
         )}
       </CardContent>
-      {pacePlan && (
+      {pacePlan && !isLoading && (
         <CardFooter className="flex justify-between">
-          <Button variant="ghost" onClick={handleGeneratePlan}>
-            Regenerate
+          <Button variant="ghost" onClick={handleGeneratePlan} disabled={isLoading}>
+             {isLoading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                'Regenerate'
+              )}
           </Button>
           <Button onClick={handleDownload}>
             <Download className="mr-2 h-4 w-4" /> Download CSV
