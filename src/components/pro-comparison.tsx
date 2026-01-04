@@ -55,6 +55,16 @@ const PRO_PBS = {
       sprint: 58 * 60 + 54,
     },
   },
+  sanders: {
+    name: 'Lionel Sanders',
+    description: 'Known for his incredible bike power and "no limits" racing style.',
+    pbs: {
+      full: 7 * 3600 + 43 * 60 + 30, // IM Arizona 2016
+      half: 3 * 3600 + 41 * 60 + 11,
+      olympic: 1 * 3600 + 48 * 60 + 0, // Estimate
+      sprint: 55 * 60 + 0, // Estimate
+    },
+  },
   'ag-avg': {
     name: 'Average Age Grouper',
     description: 'A competitive time for a typical age group athlete at a championship event.',
