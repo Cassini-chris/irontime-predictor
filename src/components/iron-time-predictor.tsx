@@ -61,8 +61,6 @@ interface IronTimePredictorProps {
   setRunTime: (time: Time) => void;
   distance: DistanceKey;
   setDistance: (distance: DistanceKey) => void;
-  mainMode: 'manual' | 'goal';
-  setMainMode: (mode: 'manual' | 'goal') => void;
 }
 
 export function IronTimePredictor({
@@ -78,10 +76,9 @@ export function IronTimePredictor({
   setRunTime,
   distance,
   setDistance,
-  mainMode,
-  setMainMode,
 }: IronTimePredictorProps) {
   const [totalTime, setTotalTime] = useState<Time>(zeroTime);
+  const [mainMode, setMainMode] = useState<'manual' | 'goal'>('goal');
 
   // Input mode and value states
   const [swimInputMode, setSwimInputMode] = useState<'time' | 'pace'>('time');
@@ -182,6 +179,29 @@ export function IronTimePredictor({
     )}:${String(time.s).padStart(2, '0')}`;
   };
 
+  const getSummary = () => {
+    const swimSeconds = timeToSeconds(swimTime);
+    const swimPacePer100m = swimSeconds > 0 ? (swimSeconds / DISTANCES[distance].swim) * 100 : 0;
+    const swimPaceMinutes = Math.floor(swimPacePer100m / 60);
+    const swimPaceSeconds = Math.floor(swimPacePer100m % 60);
+
+    const bikeHours = timeToSeconds(bikeTime) / 3600;
+    const bikeKmh = bikeHours > 0 ? DISTANCES[distance].bike / bikeHours : 0;
+
+    const runSeconds = timeToSeconds(runTime);
+    const runPacePerKm = runSeconds > 0 ? runSeconds / DISTANCES[distance].run : 0;
+    const runPaceMinutes = Math.floor(runPacePerKm / 60);
+    const runPaceSeconds = Math.floor(runPacePerKm % 60);
+
+    return {
+      swimPace: `${swimPaceMinutes}:${String(swimPaceSeconds).padStart(2, '0')} min/100m`,
+      bikeSpeed: `${bikeKmh.toFixed(2)} km/h`,
+      runPace: `${runPaceMinutes}:${String(runPaceSeconds).padStart(2, '0')} min/km`,
+    };
+  };
+
+  const summary = getSummary();
+
   const AccordionTriggerLayout = ({
     icon,
     label,
@@ -219,7 +239,7 @@ export function IronTimePredictor({
     <>
       {!isTotalTimeVisible && (
         <div className="fixed bottom-0 left-0 right-0 bg-primary/95 backdrop-blur-sm text-primary-foreground p-3 text-center shadow-lg z-50 animate-in fade-in-50 slide-in-from-bottom-4 duration-500 lg:hidden">
-          <span className="font-medium text-sm">Predicted Total Time: </span>
+          <span className="font-medium text-sm">Your Time: </span>
           <span className="font-bold font-mono tracking-tighter text-lg">
             {formatTime(totalTime)}
           </span>
@@ -227,54 +247,26 @@ export function IronTimePredictor({
       )}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 w-full">
         <Card className="lg:col-span-3 shadow-lg hover:shadow-xl transition-shadow duration-300 flex flex-col overflow-hidden">
-          <CardHeader>
-            <CardTitle className="text-2xl font-headline tracking-tight flex items-center gap-3">
-              <DistanceIcon
-                distance={distance}
-                className="h-6 w-6 text-primary"
-              />
-              Race Configuration
-            </CardTitle>
-            <CardDescription>
-              Select a distance, then choose your input method.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div>
-              <Label className="text-lg font-medium mb-2 block">Distance</Label>
-              <RadioGroup
-                value={distance}
-                onValueChange={(value) => setDistance(value as DistanceKey)}
-                className="grid grid-cols-2 sm:grid-cols-4 gap-4"
-              >
-                {Object.keys(DISTANCES).map((key) => (
-                  <div key={key} className="flex items-center space-x-2">
-                    <RadioGroupItem value={key} id={key} />
-                    <Label htmlFor={key} className="cursor-pointer">
-                      {DISTANCES[key as DistanceKey].name}
-                    </Label>
-                  </div>
-                ))}
-              </RadioGroup>
-            </div>
-
-            <Tabs
-              value={mainMode}
-              onValueChange={(v) => setMainMode(v as any)}
-              className="w-full"
-            >
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="manual">
-                  <SlidersHorizontal className="mr-2 h-4 w-4" />
-                  Manual Input
-                </TabsTrigger>
-                <TabsTrigger value="goal">
-                  <Target className="mr-2 h-4 w-4" />
-                  Goal Setter
-                </TabsTrigger>
-              </TabsList>
-              <TabsContent value="manual">
-                <Accordion
+        <CardHeader>
+          <CardTitle className="text-2xl font-headline tracking-tight flex items-center gap-3">
+            <Target className="h-6 w-6 text-primary" />
+            Goal Setter
+          </CardTitle>
+          <CardDescription>
+            Set your goal time to calculate discipline paces.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <GoalSetter
+            distance={distance}
+            setSwimTime={setSwimTime}
+            setBikeTime={setBikeTime}
+            setRunTime={setRunTime}
+            setT1Time={setT1Time}
+            setT2Time={setT2Time}
+            setMainMode={setMainMode}
+          />
+           <Accordion
                   type="single"
                   collapsible
                   defaultValue="swim"
@@ -287,7 +279,7 @@ export function IronTimePredictor({
                         icon={<Waves className="text-primary size-6" />}
                         label="Swim"
                         time={swimTime}
-                        isCalculated
+                        isCalculated={swimInputMode === 'pace'}
                       />
                     </AccordionTrigger>
                     <AccordionContent className="pt-4">
@@ -338,7 +330,7 @@ export function IronTimePredictor({
                         icon={<Bike className="text-primary size-6" />}
                         label="Bike"
                         time={bikeTime}
-                        isCalculated
+                        isCalculated={bikeInputMode === 'speed'}
                       />
                     </AccordionTrigger>
                     <AccordionContent className="pt-4">
@@ -405,7 +397,7 @@ export function IronTimePredictor({
                         }
                         label="Run"
                         time={runTime}
-                        isCalculated
+                        isCalculated={runInputMode === 'pace'}
                       />
                     </AccordionTrigger>
                     <AccordionContent className="pt-4">
@@ -432,21 +424,8 @@ export function IronTimePredictor({
                     </AccordionContent>
                   </AccordionItem>
                 </Accordion>
-              </TabsContent>
-              <TabsContent value="goal">
-                <GoalSetter
-                  distance={distance}
-                  setSwimTime={setSwimTime}
-                  setBikeTime={setBikeTime}
-                  setRunTime={setRunTime}
-                  setT1Time={setT1Time}
-                  setT2Time={setT2Time}
-                  setMainMode={setMainMode}
-                />
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
+        </CardContent>
+      </Card>
 
         <div className="lg:col-span-2 space-y-8">
           <Card
@@ -455,13 +434,18 @@ export function IronTimePredictor({
           >
             <CardHeader>
               <CardTitle className="text-2xl font-headline tracking-tight">
-                Predicted Total Time
+                Your Time
               </CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-6xl md:text-7xl font-bold font-mono text-primary tracking-tighter text-center py-4">
                 {formatTime(totalTime)}
               </p>
+              <div className="text-center text-muted-foreground">
+                <p>Swim Pace: {summary.swimPace}</p>
+                <p>Bike Speed: {summary.bikeSpeed}</p>
+                <p>Run Pace: {summary.runPace}</p>
+              </div>
             </CardContent>
           </Card>
 

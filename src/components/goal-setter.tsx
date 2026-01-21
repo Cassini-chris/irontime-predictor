@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { TimeInputGroup } from './time-input-group';
 import type { Time } from './iron-time-predictor';
 import { Button } from './ui/button';
@@ -118,6 +118,14 @@ const distributeGoalTimeStatistically = (
     };
 };
 
+const DISTANCE_RANGES = {
+  full: { min: 8 * 3600, max: 17 * 3600, step: 15 * 60, default: 12 * 3600 },
+  half: { min: 3.5 * 3600, max: 8 * 3600, step: 10 * 60, default: 5.5 * 3600 },
+  olympic: { min: 1.5 * 3600, max: 4 * 3600, step: 5 * 60, default: 2.5 * 3600 },
+  sprint: { min: 45 * 60, max: 2 * 3600, step: 2 * 60, default: 1.25 * 3600 },
+};
+
+
 export function GoalSetter({
   distance,
   setSwimTime,
@@ -134,6 +142,15 @@ export function GoalSetter({
   const [athleteBias, setAthleteBias] = useState<number>(50);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+
+  const timeToSeconds = (time: Time) => time.h * 3600 + time.m * 60 + time.s;
+
+  const { min, max, step, default: defaultTime } = DISTANCE_RANGES[distance];
+
+  useEffect(() => {
+    setGoalTime(secondsToTime(defaultTime));
+  }, [distance, defaultTime]);
+
 
   const handleDistributeTime = () => {
     const totalSeconds = goalTime.h * 3600 + goalTime.m * 60 + goalTime.s;
@@ -204,8 +221,22 @@ export function GoalSetter({
             create a balanced plan.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
-          <TimeInputGroup label="Target Time" time={goalTime} setTime={setGoalTime} />
+        <CardContent className="space-y-8">
+          <div className="space-y-4 rounded-lg border bg-background p-6 shadow-inner">
+             <Label htmlFor="goal-time-slider" className="text-center db-block w-full text-lg font-medium">Expected Finish Time</Label>
+             <p className="text-center font-mono text-5xl font-bold text-primary tracking-tighter py-2">{formatTime(goalTime)}</p>
+            <Slider
+              id="goal-time-slider"
+              min={min}
+              max={max}
+              step={step}
+              value={[timeToSeconds(goalTime)]}
+              onValueChange={(value) => setGoalTime(secondsToTime(value[0]))}
+              className="my-4"
+            />
+          </div>
+          
+          <TimeInputGroup label="Or Enter Target Time Manually" time={goalTime} setTime={setGoalTime} />
 
           <div className="space-y-2">
             <Label htmlFor="course-profile">Course Profile</Label>

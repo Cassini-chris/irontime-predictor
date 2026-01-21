@@ -27,7 +27,7 @@ interface ProComparisonProps {
 const PRO_PBS = {
   blummenfelt: {
     name: 'Kristian Blummenfelt',
-    description: 'The reigning Olympic champion and a powerhouse across all distances.',
+    description: 'The Olympic champion and a powerhouse across all distances.',
     pbs: {
       full: 7 * 3600 + 21 * 60 + 12, // Sub7 - unofficial
       half: 3 * 3600 + 29 * 60 + 4,
