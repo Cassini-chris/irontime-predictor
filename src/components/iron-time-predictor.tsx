@@ -34,6 +34,9 @@ import { GoalSetter } from './goal-setter';
 import { ProComparison } from './pro-comparison';
 import { NutritionCalculator } from './nutrition-calculator';
 import { PacePlanner } from './pace-planner';
+import { RaceDayChecklist } from './race-day-checklist';
+import { RotateCcw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 export type Time = { h: number; m: number; s: number };
 const zeroTime: Time = { h: 0, m: 0, s: 0 };
@@ -202,23 +205,39 @@ export function IronTimePredictor({
 
   const summary = getSummary();
 
+  const resetAll = () => {
+    if (confirm('Are you sure you want to reset all times?')) {
+      setSwimTime(zeroTime);
+      setBikeTime(zeroTime);
+      setRunTime(zeroTime);
+      // Default transition times
+      setT1Time({ h: 0, m: 5, s: 0 });
+      setT2Time({ h: 0, m: 3, s: 0 });
+    }
+  };
+
   const AccordionTriggerLayout = ({
     icon,
     label,
     time,
     isCalculated = false,
     colorClass = 'text-primary',
+    stat,
   }: {
     icon: React.ReactNode;
     label: string;
     time: Time;
     isCalculated?: boolean;
     colorClass?: string;
+    stat?: string;
   }) => (
     <div className="flex justify-between items-center w-full pr-4">
       <Label className="flex items-center gap-3 text-lg font-medium font-headline">
         {icon}
-        {label}
+        <div>
+          <p>{label}</p>
+          {stat && <p className="text-xs text-muted-foreground font-normal">{stat}</p>}
+        </div>
       </Label>
       <div className="text-right">
         <p
@@ -247,185 +266,196 @@ export function IronTimePredictor({
       )}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 w-full">
         <Card className="lg:col-span-3 shadow-lg hover:shadow-xl transition-shadow duration-300 flex flex-col overflow-hidden">
-        <CardHeader>
-          <CardTitle className="text-2xl font-headline tracking-tight flex items-center gap-3">
-            <Target className="h-6 w-6 text-primary" />
-            Goal Setter
-          </CardTitle>
-          <CardDescription>
-            Set your goal time to calculate discipline paces.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <GoalSetter
-            distance={distance}
-            setSwimTime={setSwimTime}
-            setBikeTime={setBikeTime}
-            setRunTime={setRunTime}
-            setT1Time={setT1Time}
-            setT2Time={setT2Time}
-            setMainMode={setMainMode}
-          />
-           <Accordion
-                  type="single"
-                  collapsible
-                  defaultValue="swim"
-                  className="w-full pt-2 space-y-2"
-                >
-                  {/* Swim Section */}
-                  <AccordionItem value="swim">
-                    <AccordionTrigger>
-                      <AccordionTriggerLayout
-                        icon={<Waves className="text-primary size-6" />}
-                        label="Swim"
-                        time={swimTime}
-                        isCalculated={swimInputMode === 'pace'}
+          <CardHeader>
+            <div className="flex justify-between items-start">
+              <div>
+                <CardTitle className="text-2xl font-headline tracking-tight flex items-center gap-3">
+                  <Target className="h-6 w-6 text-primary" />
+                  Goal Setter
+                </CardTitle>
+                <CardDescription>
+                  Set your goal time to calculate discipline paces.
+                </CardDescription>
+              </div>
+              <Button variant="outline" size="sm" onClick={resetAll} title="Reset All Times">
+                <RotateCcw className="h-4 w-4 mr-2" />
+                Reset
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <GoalSetter
+              distance={distance}
+              setSwimTime={setSwimTime}
+              setBikeTime={setBikeTime}
+              setRunTime={setRunTime}
+              setT1Time={setT1Time}
+              setT2Time={setT2Time}
+              setMainMode={setMainMode}
+            />
+            <Accordion
+              type="single"
+              collapsible
+              defaultValue="swim"
+              className="w-full pt-2 space-y-2"
+            >
+              {/* Swim Section */}
+              <AccordionItem value="swim">
+                <AccordionTrigger>
+                  <AccordionTriggerLayout
+                    icon={<Waves className="text-primary size-6" />}
+                    label="Swim"
+                    time={swimTime}
+                    isCalculated={swimInputMode === 'pace'}
+                    stat={summary.swimPace}
+                  />
+                </AccordionTrigger>
+                <AccordionContent className="pt-4">
+                  <Tabs
+                    value={swimInputMode}
+                    onValueChange={(v) => setSwimInputMode(v as any)}
+                    className="w-full"
+                  >
+                    <TabsList className="grid w-full grid-cols-2">
+                      <TabsTrigger value="time">Set Time</TabsTrigger>
+                      <TabsTrigger value="pace">Set Pace</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="time" className="pt-4">
+                      <TimeInputGroup time={swimTime} setTime={setSwimTime} />
+                    </TabsContent>
+                    <TabsContent value="pace" className="pt-4">
+                      <PaceInputGroup
+                        unit="min/100m"
+                        pace={swimPace}
+                        setPace={setSwimPace}
                       />
-                    </AccordionTrigger>
-                    <AccordionContent className="pt-4">
-                      <Tabs
-                        value={swimInputMode}
-                        onValueChange={(v) => setSwimInputMode(v as any)}
-                        className="w-full"
-                      >
-                        <TabsList className="grid w-full grid-cols-2">
-                          <TabsTrigger value="time">Set Time</TabsTrigger>
-                          <TabsTrigger value="pace">Set Pace</TabsTrigger>
-                        </TabsList>
-                        <TabsContent value="time" className="pt-4">
-                          <TimeInputGroup time={swimTime} setTime={setSwimTime} />
-                        </TabsContent>
-                        <TabsContent value="pace" className="pt-4">
-                          <PaceInputGroup
-                            unit="min/100m"
-                            pace={swimPace}
-                            setPace={setSwimPace}
-                          />
-                        </TabsContent>
-                      </Tabs>
-                    </AccordionContent>
-                  </AccordionItem>
+                    </TabsContent>
+                  </Tabs>
+                </AccordionContent>
+              </AccordionItem>
 
-                  {/* Transition 1 Section */}
-                  <AccordionItem value="t1">
-                    <AccordionTrigger>
-                      <AccordionTriggerLayout
-                        icon={
-                          <ArrowRightLeft className="text-accent size-6" />
-                        }
-                        label="Transition 1"
-                        time={t1Time}
-                        colorClass="text-accent"
-                      />
-                    </AccordionTrigger>
-                    <AccordionContent className="pt-4">
-                      <TimeInputGroup time={t1Time} setTime={setT1Time} />
-                    </AccordionContent>
-                  </AccordionItem>
+              {/* Transition 1 Section */}
+              <AccordionItem value="t1">
+                <AccordionTrigger>
+                  <AccordionTriggerLayout
+                    icon={
+                      <ArrowRightLeft className="text-accent size-6" />
+                    }
+                    label="Transition 1"
+                    time={t1Time}
+                    colorClass="text-accent"
+                  />
+                </AccordionTrigger>
+                <AccordionContent className="pt-4">
+                  <TimeInputGroup time={t1Time} setTime={setT1Time} />
+                </AccordionContent>
+              </AccordionItem>
 
-                  {/* Bike Section */}
-                  <AccordionItem value="bike">
-                    <AccordionTrigger>
-                      <AccordionTriggerLayout
-                        icon={<Bike className="text-primary size-6" />}
-                        label="Bike"
-                        time={bikeTime}
-                        isCalculated={bikeInputMode === 'speed'}
-                      />
-                    </AccordionTrigger>
-                    <AccordionContent className="pt-4">
-                      <Tabs
-                        value={bikeInputMode}
-                        onValueChange={(v) => setBikeInputMode(v as any)}
-                        className="w-full"
-                      >
-                        <TabsList className="grid w-full grid-cols-2">
-                          <TabsTrigger value="time">Set Time</TabsTrigger>
-                          <TabsTrigger value="speed">Set Speed</TabsTrigger>
-                        </TabsList>
-                        <TabsContent value="time" className="pt-4">
-                          <TimeInputGroup time={bikeTime} setTime={setBikeTime} />
-                        </TabsContent>
-                        <TabsContent value="speed" className="pt-4">
-                          <div className="space-y-2">
-                            <Label className="text-sm font-medium">
-                              Speed{' '}
-                              <span className="text-sm text-muted-foreground">
-                                (km/h)
-                              </span>
-                            </Label>
-                            <Input
-                              type="number"
-                              value={bikeSpeed}
-                              onChange={(e) =>
-                                setBikeSpeed(Number(e.target.value) || 0)
-                              }
-                              placeholder="e.g. 35"
-                              aria-label="Bike speed in km/h"
-                              min="0"
-                              className="font-mono text-center"
-                            />
-                          </div>
-                        </TabsContent>
-                      </Tabs>
-                    </AccordionContent>
-                  </AccordionItem>
+              {/* Bike Section */}
+              <AccordionItem value="bike">
+                <AccordionTrigger>
+                  <AccordionTriggerLayout
+                    icon={<Bike className="text-primary size-6" />}
+                    label="Bike"
+                    time={bikeTime}
+                    isCalculated={bikeInputMode === 'speed'}
+                    stat={summary.bikeSpeed}
+                  />
+                </AccordionTrigger>
+                <AccordionContent className="pt-4">
+                  <Tabs
+                    value={bikeInputMode}
+                    onValueChange={(v) => setBikeInputMode(v as any)}
+                    className="w-full"
+                  >
+                    <TabsList className="grid w-full grid-cols-2">
+                      <TabsTrigger value="time">Set Time</TabsTrigger>
+                      <TabsTrigger value="speed">Set Speed</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="time" className="pt-4">
+                      <TimeInputGroup time={bikeTime} setTime={setBikeTime} />
+                    </TabsContent>
+                    <TabsContent value="speed" className="pt-4">
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium">
+                          Speed{' '}
+                          <span className="text-sm text-muted-foreground">
+                            (km/h)
+                          </span>
+                        </Label>
+                        <Input
+                          type="number"
+                          value={bikeSpeed}
+                          onChange={(e) =>
+                            setBikeSpeed(Number(e.target.value) || 0)
+                          }
+                          placeholder="e.g. 35"
+                          aria-label="Bike speed in km/h"
+                          min="0"
+                          className="font-mono text-center"
+                        />
+                      </div>
+                    </TabsContent>
+                  </Tabs>
+                </AccordionContent>
+              </AccordionItem>
 
-                  {/* Transition 2 Section */}
-                  <AccordionItem value="t2">
-                    <AccordionTrigger>
-                      <AccordionTriggerLayout
-                        icon={
-                          <ArrowRightLeft className="text-accent size-6" />
-                        }
-                        label="Transition 2"
-                        time={t2Time}
-                        colorClass="text-accent"
-                      />
-                    </AccordionTrigger>
-                    <AccordionContent className="pt-4">
-                      <TimeInputGroup time={t2Time} setTime={setT2Time} />
-                    </AccordionContent>
-                  </AccordionItem>
+              {/* Transition 2 Section */}
+              <AccordionItem value="t2">
+                <AccordionTrigger>
+                  <AccordionTriggerLayout
+                    icon={
+                      <ArrowRightLeft className="text-accent size-6" />
+                    }
+                    label="Transition 2"
+                    time={t2Time}
+                    colorClass="text-accent"
+                  />
+                </AccordionTrigger>
+                <AccordionContent className="pt-4">
+                  <TimeInputGroup time={t2Time} setTime={setT2Time} />
+                </AccordionContent>
+              </AccordionItem>
 
-                  {/* Run Section */}
-                  <AccordionItem value="run">
-                    <AccordionTrigger>
-                      <AccordionTriggerLayout
-                        icon={
-                          <PersonStanding className="text-primary size-6" />
-                        }
-                        label="Run"
-                        time={runTime}
-                        isCalculated={runInputMode === 'pace'}
+              {/* Run Section */}
+              <AccordionItem value="run">
+                <AccordionTrigger>
+                  <AccordionTriggerLayout
+                    icon={
+                      <PersonStanding className="text-primary size-6" />
+                    }
+                    label="Run"
+                    time={runTime}
+                    isCalculated={runInputMode === 'pace'}
+                    stat={summary.runPace}
+                  />
+                </AccordionTrigger>
+                <AccordionContent className="pt-4">
+                  <Tabs
+                    value={runInputMode}
+                    onValueChange={(v) => setRunInputMode(v as any)}
+                    className="w-full"
+                  >
+                    <TabsList className="grid w-full grid-cols-2">
+                      <TabsTrigger value="time">Set Time</TabsTrigger>
+                      <TabsTrigger value="pace">Set Pace</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="time" className="pt-4">
+                      <TimeInputGroup time={runTime} setTime={setRunTime} />
+                    </TabsContent>
+                    <TabsContent value="pace" className="pt-4">
+                      <PaceInputGroup
+                        unit="min/km"
+                        pace={runPace}
+                        setPace={setRunPace}
                       />
-                    </AccordionTrigger>
-                    <AccordionContent className="pt-4">
-                      <Tabs
-                        value={runInputMode}
-                        onValueChange={(v) => setRunInputMode(v as any)}
-                        className="w-full"
-                      >
-                        <TabsList className="grid w-full grid-cols-2">
-                          <TabsTrigger value="time">Set Time</TabsTrigger>
-                          <TabsTrigger value="pace">Set Pace</TabsTrigger>
-                        </TabsList>
-                        <TabsContent value="time" className="pt-4">
-                          <TimeInputGroup time={runTime} setTime={setRunTime} />
-                        </TabsContent>
-                        <TabsContent value="pace" className="pt-4">
-                          <PaceInputGroup
-                            unit="min/km"
-                            pace={runPace}
-                            setPace={setRunPace}
-                          />
-                        </TabsContent>
-                      </Tabs>
-                    </AccordionContent>
-                  </AccordionItem>
-                </Accordion>
-        </CardContent>
-      </Card>
+                    </TabsContent>
+                  </Tabs>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </CardContent>
+        </Card>
 
         <div className="lg:col-span-2 space-y-8">
           <Card
@@ -463,6 +493,7 @@ export function IronTimePredictor({
             runTime={runTime}
           />
           <ProComparison totalTime={totalTime} distance={distance} />
+          <RaceDayChecklist />
         </div>
       </div>
     </>

@@ -69,6 +69,50 @@
     --input: 0 0% 89.8%;
     --ring: 350 85% 55%;
   }
+
+  .theme-ocean {
+    --background: 210 40% 98%;
+    --foreground: 222.2 47.4% 11.2%;
+    --card: 210 40% 98%;
+    --card-foreground: 222.2 47.4% 11.2%;
+    --popover: 210 40% 98%;
+    --popover-foreground: 222.2 47.4% 11.2%;
+    --primary: 199 89% 48%; /* Ocean Blue */
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 180 100% 30%; /* Teal Accent */
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 199 89% 48%;
+  }
+
+  .theme-forest {
+    --background: 140 30% 98%;
+    --foreground: 140 70% 10%;
+    --card: 140 30% 98%;
+    --card-foreground: 140 70% 10%;
+    --popover: 140 30% 98%;
+    --popover-foreground: 140 70% 10%;
+    --primary: 142 76% 36%; /* Forest Green */
+    --primary-foreground: 140 30% 98%;
+    --secondary: 140 30% 96%;
+    --secondary-foreground: 140 70% 10%;
+    --muted: 140 30% 96%;
+    --muted-foreground: 140 20% 45%;
+    --accent: 35 90% 40%; /* Earth/Wood Accent */
+    --accent-foreground: 140 30% 98%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 140 30% 98%;
+    --border: 142 30% 90%;
+    --input: 142 30% 90%;
+    --ring: 142 76% 36%;
+    }
 }
 
 @layer base {

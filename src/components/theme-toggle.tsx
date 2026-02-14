@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Moon, Sun, Zap } from 'lucide-react';
+import { Moon, Sun, Zap, Droplets, Trees } from 'lucide-react';
 import { useTheme } from 'next-themes';
 
 import { Button } from '@/components/ui/button';
@@ -34,6 +34,14 @@ export function ThemeToggle() {
         <DropdownMenuItem onClick={() => setTheme('theme-roth')}>
           <Zap className="mr-2 h-4 w-4" />
           Challenge Roth
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme('theme-ocean')}>
+          <Droplets className="mr-2 h-4 w-4" />
+          Ocean Blue
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme('theme-forest')}>
+          <Trees className="mr-2 h-4 w-4" />
+          Forest Green
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => setTheme('system')}>
           System
