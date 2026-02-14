@@ -468,13 +468,37 @@ export function IronTimePredictor({
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-6xl md:text-7xl font-bold font-mono text-primary tracking-tighter text-center py-4">
-                {formatTime(totalTime)}
-              </p>
-              <div className="text-center text-muted-foreground">
-                <p>Swim Pace: {summary.swimPace}</p>
-                <p>Bike Speed: {summary.bikeSpeed}</p>
-                <p>Run Pace: {summary.runPace}</p>
+              <div className="bg-primary/10 rounded-xl p-6 mb-6 text-center border-2 border-primary/20">
+                <p className="text-sm uppercase tracking-widest text-muted-foreground mb-1 font-semibold">Total Time</p>
+                <p className="text-6xl md:text-7xl font-black font-mono text-primary tracking-tighter">
+                  {formatTime(totalTime)}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3">
+                <div className="flex items-center justify-between bg-muted/40 p-3 rounded-lg border border-border/50">
+                  <div className="flex items-center gap-2">
+                    <Waves className="size-4 text-primary" />
+                    <span className="text-sm font-medium text-muted-foreground">Swim Pace</span>
+                  </div>
+                  <span className="font-mono font-bold text-foreground text-lg">{summary.swimPace}</span>
+                </div>
+
+                <div className="flex items-center justify-between bg-muted/40 p-3 rounded-lg border border-border/50">
+                  <div className="flex items-center gap-2">
+                    <Bike className="size-4 text-primary" />
+                    <span className="text-sm font-medium text-muted-foreground">Bike Speed</span>
+                  </div>
+                  <span className="font-mono font-bold text-foreground text-lg">{summary.bikeSpeed}</span>
+                </div>
+
+                <div className="flex items-center justify-between bg-muted/40 p-3 rounded-lg border border-border/50">
+                  <div className="flex items-center gap-2">
+                    <PersonStanding className="size-4 text-primary" />
+                    <span className="text-sm font-medium text-muted-foreground">Run Pace</span>
+                  </div>
+                  <span className="font-mono font-bold text-foreground text-lg">{summary.runPace}</span>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -492,7 +516,13 @@ export function IronTimePredictor({
             bikeTime={bikeTime}
             runTime={runTime}
           />
-          <ProComparison totalTime={totalTime} distance={distance} />
+          <ProComparison
+            totalTime={totalTime}
+            swimTime={swimTime}
+            bikeTime={bikeTime}
+            runTime={runTime}
+            distance={distance}
+          />
           <RaceDayChecklist />
         </div>
       </div>

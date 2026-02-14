@@ -16,11 +16,12 @@ export default function Home() {
   const { theme } = useTheme();
 
   // Lifted state from IronTimePredictor
-  const [swimTime, setSwimTime] = useState<Time>(zeroTime);
-  const [t1Time, setT1Time] = useState<Time>({ h: 0, m: 5, s: 0 });
-  const [bikeTime, setBikeTime] = useState<Time>(zeroTime);
-  const [t2Time, setT2Time] = useState<Time>({ h: 0, m: 3, s: 0 });
-  const [runTime, setRunTime] = useState<Time>(zeroTime);
+  // Default to ~12h finish for Full Distance
+  const [swimTime, setSwimTime] = useState<Time>({ h: 1, m: 15, s: 0 });
+  const [t1Time, setT1Time] = useState<Time>({ h: 0, m: 8, s: 0 });
+  const [bikeTime, setBikeTime] = useState<Time>({ h: 6, m: 0, s: 0 });
+  const [t2Time, setT2Time] = useState<Time>({ h: 0, m: 6, s: 0 });
+  const [runTime, setRunTime] = useState<Time>({ h: 4, m: 31, s: 0 });
   const [distance, setDistance] = useState<DistanceKey>('full');
 
   return (
@@ -39,8 +40,7 @@ export default function Home() {
                 </h1>
               </div>
               <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                A calculator for your Ironman total time. Input your discipline
-                times to predict your finish.
+                A calculator for your total Triathlon Time
               </p>
             </header>
 
@@ -59,14 +59,14 @@ export default function Home() {
               setDistance={setDistance}
             />
           </div>
-        </main>
+        </main >
         <footer className="w-full py-8 text-center text-muted-foreground text-sm">
           <p>
             &copy; {new Date().getFullYear()} IronTime Predictor. Unleash your
             potential.
           </p>
         </footer>
-      </div>
+      </div >
     </>
   );
 }

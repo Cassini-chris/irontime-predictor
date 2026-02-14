@@ -21,6 +21,9 @@ import {
 
 interface ProComparisonProps {
   totalTime: Time;
+  swimTime: Time;
+  bikeTime: Time;
+  runTime: Time;
   distance: DistanceKey;
 }
 
@@ -29,50 +32,50 @@ const PRO_PBS = {
     name: 'Kristian Blummenfelt',
     description: 'The Olympic champion and a powerhouse across all distances.',
     pbs: {
-      full: 7 * 3600 + 21 * 60 + 12, // Sub7 - unofficial
-      half: 3 * 3600 + 29 * 60 + 4,
-      olympic: 1 * 3600 + 45 * 60 + 4,
-      sprint: 50 * 60 + 53, // Not his focus, but an estimate
+      full: 7 * 3600 + 21 * 60 + 12,
     },
+    splits: {
+      full: { swim: '48:21', bike: '3:24:22', run: '2:30:50' }
+    }
   },
   frodeno: {
     name: 'Jan Frodeno',
     description: 'Widely considered the G.O.A.T. of long-distance triathlon.',
     pbs: {
-      full: 7 * 3600 + 27 * 60 + 43, // Tri Battle - unofficial
-      half: 3 * 3600 + 33 * 60 + 21,
-      olympic: 1 * 3600 + 45 * 60 + 31,
-      sprint: 52 * 60 + 10,
+      full: 7 * 3600 + 27 * 60 + 53,
     },
+    splits: {
+      full: { swim: '45:58', bike: '3:55:22', run: '2:39:18' }
+    }
   },
   ryf: {
     name: 'Daniela Ryf',
     description: 'The dominant force in female long-distance racing for a decade.',
     pbs: {
-      full: 8 * 3600 + 8 * 60 + 29, // Roth 2023
-      half: 3 * 3600 + 51 * 60 + 56,
-      olympic: 1 * 3600 + 55 * 60 + 42,
-      sprint: 58 * 60 + 54,
+      full: 8 * 3600 + 8 * 60 + 21,
     },
+    splits: {
+      full: { swim: '49:34', bike: '4:22:56', run: '2:51:53' }
+    }
   },
   sanders: {
     name: 'Lionel Sanders',
     description: 'Known for his incredible bike power and "no limits" racing style.',
     pbs: {
-      full: 7 * 3600 + 43 * 60 + 30, // IM Arizona 2016
-      half: 3 * 3600 + 41 * 60 + 11,
-      olympic: 1 * 3600 + 48 * 60 + 0, // Estimate
-      sprint: 55 * 60 + 0, // Estimate
+      full: 7 * 3600 + 43 * 60 + 28,
     },
+    splits: {
+      full: { swim: '53:45', bike: '4:04:38', run: '2:42:31' }
+    }
   },
   'ag-avg': {
     name: 'Average Age Grouper',
-    description: 'A competitive time for a typical age group athlete at a championship event.',
+    description: 'A competitive time for a typical age group athlete.',
     pbs: {
       full: 12 * 3600 + 35 * 60,
-      half: 5 * 3600 + 30 * 60,
-      olympic: 2 * 3600 + 45 * 60,
-      sprint: 1 * 3600 + 25 * 60,
+    },
+    splits: {
+      full: { swim: '1:15:00', bike: '6:15:00', run: '4:45:00' } // Approx
     }
   }
 };
@@ -81,32 +84,40 @@ type ProKey = keyof typeof PRO_PBS;
 
 const timeToSeconds = (time: Time) => time.h * 3600 + time.m * 60 + time.s;
 
-const secondsToFormattedTime = (totalSeconds: number) => {
-  return new Date(totalSeconds * 1000).toISOString().substr(11, 8);
+const formatTime = (time: Time) => {
+  return `${String(time.h).padStart(2, '0')}:${String(time.m).padStart(2, '0')}:${String(time.s).padStart(2, '0')}`;
 };
 
 export function ProComparison({
   totalTime,
+  swimTime,
+  bikeTime,
+  runTime,
   distance,
 }: ProComparisonProps) {
   const [selectedPro, setSelectedPro] = useState<ProKey>('blummenfelt');
 
   const userTotalSeconds = timeToSeconds(totalTime);
   const proData = PRO_PBS[selectedPro];
-  const proSeconds = proData.pbs[distance];
 
-  const percentage =
-    userTotalSeconds > 0 ? (proSeconds / userTotalSeconds) * 100 : 0;
-  
-  // To avoid showing 1500% for an average athlete compared to a pro
-  const displayPercentage = userTotalSeconds > proSeconds ? (proSeconds / userTotalSeconds) * 100 : (userTotalSeconds / proSeconds) * 100;
-  
-  const comparisonText = userTotalSeconds > proSeconds 
+  // Create safe defaults if distance doesn't exist in data
+  const proSeconds = proData.pbs.full;
+  const proSplits = proData.splits?.full || { swim: 'N/A', bike: 'N/A', run: 'N/A' };
+
+  if (distance !== 'full') {
+    return (
+      <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300 opacity-80">
+        <CardHeader>
+          <CardTitle className="text-xl">Pro-Benchmark</CardTitle>
+          <CardDescription>Detailed comparisons available for Full Distance only.</CardDescription>
+        </CardHeader>
+      </Card>
+    );
+  }
+
+  const comparisonText = userTotalSeconds > proSeconds
     ? `Your time is ${((userTotalSeconds / proSeconds - 1) * 100).toFixed(0)}% slower than their record.`
     : `Your time is ${((proSeconds / userTotalSeconds - 1) * 100).toFixed(0)}% faster than their record!`;
-
-
-  const proTime = secondsToFormattedTime(proSeconds);
 
   return (
     <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
@@ -135,20 +146,37 @@ export function ProComparison({
           </Select>
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <p className="text-sm text-muted-foreground">{proData.description} Their record for this distance is <span className="font-bold">{proTime}</span>.</p>
-        {userTotalSeconds > 0 ? (
-          <>
-            <Progress value={displayPercentage} className="h-4" />
-            <p className="text-center font-medium text-lg">
-                {comparisonText}
-            </p>
-          </>
-        ) : (
-          <p className="text-center text-muted-foreground">
-            Enter your times to see the comparison.
+      <CardContent className="space-y-6">
+        <p className="text-sm text-muted-foreground">{proData.description}</p>
+
+        <div className="grid grid-cols-4 gap-4 text-center text-sm">
+          <div className="font-semibold text-muted-foreground">Discipline</div>
+          <div className="font-semibold text-primary">Pro</div>
+          <div className="font-semibold text-foreground">You</div>
+          <div className="font-semibold text-muted-foreground">Diff</div>
+
+          <div className="text-left font-medium">Swim</div>
+          <div className="font-mono">{proSplits.swim}</div>
+          <div className="font-mono">{formatTime(swimTime)}</div>
+          <div className="text-xs text-muted-foreground">-</div>
+
+          <div className="text-left font-medium">Bike</div>
+          <div className="font-mono">{proSplits.bike}</div>
+          <div className="font-mono">{formatTime(bikeTime)}</div>
+          <div className="text-xs text-muted-foreground">-</div>
+
+          <div className="text-left font-medium">Run</div>
+          <div className="font-mono">{proSplits.run}</div>
+          <div className="font-mono">{formatTime(runTime)}</div>
+          <div className="text-xs text-muted-foreground">-</div>
+        </div>
+
+        <div className="bg-muted/50 p-4 rounded-lg text-center">
+          <p className="text-sm font-semibold mb-1">Total Comparison</p>
+          <p className="font-medium text-lg">
+            {comparisonText}
           </p>
-        )}
+        </div>
       </CardContent>
     </Card>
   );

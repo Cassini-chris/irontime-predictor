@@ -33,6 +33,7 @@ export default function RootLayout({
           defaultTheme="dark"
           enableSystem
           disableTransitionOnChange
+          themes={['light', 'dark', 'theme-roth']}
         >
           {children}
           <Toaster />

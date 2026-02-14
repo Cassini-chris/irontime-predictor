@@ -35,14 +35,6 @@ export function ThemeToggle() {
           <Zap className="mr-2 h-4 w-4" />
           Challenge Roth
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme('theme-ocean')}>
-          <Droplets className="mr-2 h-4 w-4" />
-          Ocean Blue
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme('theme-forest')}>
-          <Trees className="mr-2 h-4 w-4" />
-          Forest Green
-        </DropdownMenuItem>
         <DropdownMenuItem onClick={() => setTheme('system')}>
           System
         </DropdownMenuItem>

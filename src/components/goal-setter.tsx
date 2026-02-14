@@ -58,68 +58,104 @@ type CalculatedSplits = {
 };
 
 const secondsToTime = (secs: number): Time => {
-    const roundedSecs = Math.max(0, Math.round(secs));
-    return {
-        h: Math.floor(roundedSecs / 3600),
-        m: Math.floor((roundedSecs % 3600) / 60),
-        s: roundedSecs % 60,
-    };
+  const roundedSecs = Math.max(0, Math.round(secs));
+  return {
+    h: Math.floor(roundedSecs / 3600),
+    m: Math.floor((roundedSecs % 3600) / 60),
+    s: roundedSecs % 60,
+  };
 };
 
 const distributeGoalTimeStatistically = (
-    goalTime: Time,
-    distance: 'full' | 'half' | 'olympic' | 'sprint',
-    courseProfile: string,
-    athleteBias: number
+  goalTime: Time,
+  distance: 'full' | 'half' | 'olympic' | 'sprint',
+  courseProfile: string,
+  athleteBias: number
 ): { swimTime: Time; bikeTime: Time; runTime: Time; t1Time: Time; t2Time: Time } => {
-    const totalSeconds = goalTime.h * 3600 + goalTime.m * 60 + goalTime.s;
+  const totalSeconds = goalTime.h * 3600 + goalTime.m * 60 + goalTime.s;
 
-    const transitionPercentages = { full: 0.025, half: 0.03, olympic: 0.04, sprint: 0.05 };
-    const totalTransitionSeconds = totalSeconds * transitionPercentages[distance];
-    const t1Seconds = totalTransitionSeconds * 0.6;
-    const t2Seconds = totalTransitionSeconds * 0.4;
-    
-    const availableTime = totalSeconds - totalTransitionSeconds;
-    
-    const baseSplits = { full: { swim: 0.11, bike: 0.53, run: 0.36 }, half: { swim: 0.10, bike: 0.52, run: 0.38 }, olympic: { swim: 0.15, bike: 0.50, run: 0.35 }, sprint: { swim: 0.15, bike: 0.50, run: 0.35 } };
-    let { swim, bike, run } = baseSplits[distance];
-    
-    const courseModifiers: { [key: string]: { bike: number, run: number } } = { flat: { bike: -0.03, run: -0.01 }, rolling: { bike: 0, run: 0 }, hilly: { bike: 0.03, run: 0.01 }, extreme: { bike: 0.05, run: 0.02 } };
-    bike += courseModifiers[courseProfile].bike;
-    run += courseModifiers[courseProfile].run;
-    swim = 1 - bike - run;
+  const transitionPercentages = { full: 0.025, half: 0.03, olympic: 0.04, sprint: 0.05 };
+  let t1Seconds = 0;
+  let t2Seconds = 0;
 
-    const bias = (athleteBias - 50) / 50; // -1 (swim/bike) to +1 (run)
-    const biasModifier = Math.min(swim, bike, run) * 0.2;
-    if (bias < 0) { // Stronger swim/biker
-        run += biasModifier * Math.abs(bias);
-        bike -= (biasModifier * Math.abs(bias)) * 0.5;
-        swim -= (biasModifier * Math.abs(bias)) * 0.5;
-    } else { // Stronger runner
-        run -= biasModifier * bias;
-        bike += (biasModifier * bias) * 0.5;
-        swim += (biasModifier * bias) * 0.5;
+  if (distance === 'full') {
+    // Benchmark Interpolation
+    // Pro (Sub-9h): T1 ~ 2:45 (165s), T2 ~ 2:00 (120s)
+    // Avg (12h): T1 ~ 5:15 (315s), T2 ~ 4:15 (255s)
+    // Slow (16h+): T1 ~ 10:00 (600s), T2 ~ 8:00 (480s)
+
+    const proTime = 9 * 3600;
+    const avgTime = 12 * 3600;
+    const slowTime = 16 * 3600;
+
+    if (totalSeconds <= proTime) {
+      t1Seconds = 165;
+      t2Seconds = 120;
+    } else if (totalSeconds <= avgTime) {
+      // 9h - 12h interpolation
+      const ratio = (totalSeconds - proTime) / (avgTime - proTime);
+      t1Seconds = 165 + (315 - 165) * ratio;
+      t2Seconds = 120 + (255 - 120) * ratio;
+    } else if (totalSeconds <= slowTime) {
+      // 12h - 16h interpolation
+      const ratio = (totalSeconds - avgTime) / (slowTime - avgTime);
+      t1Seconds = 315 + (600 - 315) * ratio;
+      t2Seconds = 255 + (480 - 255) * ratio;
+    } else {
+      // 16h+ (Slow)
+      t1Seconds = 600;
+      t2Seconds = 480;
     }
-    const total = swim + bike + run;
-    swim /= total;
-    bike /= total;
-    run /= total;
+  } else {
+    // Standard percentage based for other distances
+    let totalTransitionSeconds = totalSeconds * transitionPercentages[distance];
+    t1Seconds = totalTransitionSeconds * 0.6;
+    t2Seconds = totalTransitionSeconds * 0.4;
+  }
 
-    const swimSeconds = availableTime * swim;
-    const bikeSeconds = availableTime * bike;
-    const runSeconds = availableTime * run;
+  const totalTransitionSeconds = t1Seconds + t2Seconds;
 
-    return {
-        swimTime: secondsToTime(swimSeconds),
-        bikeTime: secondsToTime(bikeSeconds),
-        runTime: secondsToTime(runSeconds),
-        t1Time: secondsToTime(t1Seconds),
-        t2Time: secondsToTime(t2Seconds),
-    };
+  const availableTime = totalSeconds - totalTransitionSeconds;
+
+  const baseSplits = { full: { swim: 0.11, bike: 0.53, run: 0.36 }, half: { swim: 0.10, bike: 0.52, run: 0.38 }, olympic: { swim: 0.15, bike: 0.50, run: 0.35 }, sprint: { swim: 0.15, bike: 0.50, run: 0.35 } };
+  let { swim, bike, run } = baseSplits[distance];
+
+  const courseModifiers: { [key: string]: { bike: number, run: number } } = { flat: { bike: -0.03, run: -0.01 }, rolling: { bike: 0, run: 0 }, hilly: { bike: 0.03, run: 0.01 }, extreme: { bike: 0.05, run: 0.02 } };
+  bike += courseModifiers[courseProfile].bike;
+  run += courseModifiers[courseProfile].run;
+  swim = 1 - bike - run;
+
+  const bias = (athleteBias - 50) / 50; // -1 (swim/bike) to +1 (run)
+  const biasModifier = Math.min(swim, bike, run) * 0.2;
+  if (bias < 0) { // Stronger swim/biker
+    run += biasModifier * Math.abs(bias);
+    bike -= (biasModifier * Math.abs(bias)) * 0.5;
+    swim -= (biasModifier * Math.abs(bias)) * 0.5;
+  } else { // Stronger runner
+    run -= biasModifier * bias;
+    bike += (biasModifier * bias) * 0.5;
+    swim += (biasModifier * bias) * 0.5;
+  }
+  const total = swim + bike + run;
+  swim /= total;
+  bike /= total;
+  run /= total;
+
+  const swimSeconds = availableTime * swim;
+  const bikeSeconds = availableTime * bike;
+  const runSeconds = availableTime * run;
+
+  return {
+    swimTime: secondsToTime(swimSeconds),
+    bikeTime: secondsToTime(bikeSeconds),
+    runTime: secondsToTime(runSeconds),
+    t1Time: secondsToTime(t1Seconds),
+    t2Time: secondsToTime(t2Seconds),
+  };
 };
 
 const DISTANCE_RANGES = {
-  full: { min: 8 * 3600, max: 17 * 3600, step: 15 * 60, default: 12 * 3600 },
+  full: { min: 25199, max: 17 * 3600, step: 15 * 60, default: 12 * 3600 }, // Min approx 6:59:59
   half: { min: 3.5 * 3600, max: 8 * 3600, step: 10 * 60, default: 5.5 * 3600 },
   olympic: { min: 1.5 * 3600, max: 4 * 3600, step: 5 * 60, default: 2.5 * 3600 },
   sprint: { min: 45 * 60, max: 2 * 3600, step: 2 * 60, default: 1.25 * 3600 },
@@ -183,7 +219,7 @@ export function GoalSetter({
         t1: t1Time,
         t2: t2Time,
       });
-      
+
       // Switch back to manual input tab to show results
       toast({
         title: 'Plan Generated!',
@@ -208,23 +244,19 @@ export function GoalSetter({
     athleteBias === 50
       ? 'Balanced'
       : athleteBias < 50
-      ? `Swim-Bike Focus`
-      : `Run Focus`;
+        ? `Swim-Bike Focus`
+        : `Run Focus`;
 
   return (
     <div className="space-y-6 pt-4">
       <Card className="border-dashed bg-card/50">
         <CardHeader>
-          <CardTitle>Set Your Goal</CardTitle>
-          <CardDescription>
-            Enter your target finish time and parameters, and let our AI coach
-            create a balanced plan.
-          </CardDescription>
+          <CardTitle>Set Target Time</CardTitle>
         </CardHeader>
         <CardContent className="space-y-8">
           <div className="space-y-4 rounded-lg border bg-background p-6 shadow-inner">
-             <Label htmlFor="goal-time-slider" className="text-center db-block w-full text-lg font-medium">Expected Finish Time</Label>
-             <p className="text-center font-mono text-5xl font-bold text-primary tracking-tighter py-2">{formatTime(goalTime)}</p>
+            <Label htmlFor="goal-time-slider" className="text-center db-block w-full text-lg font-medium">Expected Finish Time</Label>
+            <p className="text-center font-mono text-5xl font-bold text-primary tracking-tighter py-2">{formatTime(goalTime)}</p>
             <Slider
               id="goal-time-slider"
               min={min}
@@ -235,7 +267,7 @@ export function GoalSetter({
               className="my-4"
             />
           </div>
-          
+
           <TimeInputGroup label="Or Enter Target Time Manually" time={goalTime} setTime={setGoalTime} />
 
           <div className="space-y-2">
@@ -261,18 +293,18 @@ export function GoalSetter({
               <Label htmlFor="athlete-bias">Athlete Bias</Label>
               <span className="text-xs font-medium text-muted-foreground">{biasLabel}</span>
             </div>
-             <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                <span>Strong Swimmer/Biker</span>
-                <Slider
-                    id="athlete-bias"
-                    min={0}
-                    max={100}
-                    step={5}
-                    value={[athleteBias]}
-                    onValueChange={(value) => setAthleteBias(value[0])}
-                    className="flex-1"
-                />
-                <span>Strong Runner</span>
+            <div className="flex items-center gap-4 text-xs text-muted-foreground">
+              <span>Strong Swimmer/Biker</span>
+              <Slider
+                id="athlete-bias"
+                min={0}
+                max={100}
+                step={5}
+                value={[athleteBias]}
+                onValueChange={(value) => setAthleteBias(value[0])}
+                className="flex-1"
+              />
+              <span>Strong Runner</span>
             </div>
           </div>
 
