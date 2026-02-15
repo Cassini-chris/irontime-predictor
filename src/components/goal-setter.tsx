@@ -293,8 +293,11 @@ export function GoalSetter({
               <Label htmlFor="athlete-bias">Athlete Bias</Label>
               <span className="text-xs font-medium text-muted-foreground">{biasLabel}</span>
             </div>
-            <div className="flex items-center gap-4 text-xs text-muted-foreground">
-              <span>Strong Swimmer/Biker</span>
+            <div className="flex flex-col gap-3 text-xs text-muted-foreground sm:flex-row sm:items-center sm:gap-4">
+              <div className="flex justify-between w-full sm:w-auto sm:contents">
+                <span>Strong Swimmer/Biker</span>
+                <span className="sm:hidden text-right">Strong Runner</span>
+              </div>
               <Slider
                 id="athlete-bias"
                 min={0}
@@ -304,7 +307,7 @@ export function GoalSetter({
                 onValueChange={(value) => setAthleteBias(value[0])}
                 className="flex-1"
               />
-              <span>Strong Runner</span>
+              <span className="hidden sm:block">Strong Runner</span>
             </div>
           </div>
 

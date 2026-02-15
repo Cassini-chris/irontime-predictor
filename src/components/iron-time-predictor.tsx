@@ -33,7 +33,6 @@ import {
 import { GoalSetter } from './goal-setter';
 import { ProComparison } from './pro-comparison';
 import { NutritionCalculator } from './nutrition-calculator';
-import { PacePlanner } from './pace-planner';
 import { RaceDayChecklist } from './race-day-checklist';
 import { RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -511,11 +510,6 @@ export function IronTimePredictor({
             distance={distance}
           />
           <NutritionCalculator bikeTime={bikeTime} runTime={runTime} />
-          <PacePlanner
-            distance={distance}
-            bikeTime={bikeTime}
-            runTime={runTime}
-          />
           <ProComparison
             totalTime={totalTime}
             swimTime={swimTime}

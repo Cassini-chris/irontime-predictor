@@ -84,9 +84,82 @@ type ProKey = keyof typeof PRO_PBS;
 
 const timeToSeconds = (time: Time) => time.h * 3600 + time.m * 60 + time.s;
 
+const parseSplitToSeconds = (split: string) => {
+  const parts = split.split(':').map(Number);
+  if (parts.length === 2) {
+    // mm:ss
+    return parts[0] * 60 + parts[1];
+  }
+  if (parts.length === 3) {
+    // hh:mm:ss
+    return parts[0] * 3600 + parts[1] * 60 + parts[2];
+  }
+  return 0;
+};
+
+const formatSecondsToTime = (totalSeconds: number) => {
+  const absSeconds = Math.abs(totalSeconds);
+  const h = Math.floor(absSeconds / 3600);
+  const m = Math.floor((absSeconds % 3600) / 60);
+  const s = absSeconds % 60;
+
+  const sign = totalSeconds >= 0 ? '+' : '-';
+
+  if (h > 0) {
+    return `${sign}${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  }
+  return `${sign}${m}:${String(s).padStart(2, '0')}`;
+};
+
 const formatTime = (time: Time) => {
   return `${String(time.h).padStart(2, '0')}:${String(time.m).padStart(2, '0')}:${String(time.s).padStart(2, '0')}`;
 };
+
+interface ComparisonBarProps {
+  label: string;
+  proSeconds: number;
+  userSeconds: number;
+  proTimeStr: string;
+  userTimeStr: string;
+  diffStr: string;
+}
+
+function ComparisonBar({ label, proSeconds, userSeconds, proTimeStr, userTimeStr, diffStr }: ComparisonBarProps) {
+  const maxSeconds = Math.max(proSeconds, userSeconds);
+  const proWidth = (proSeconds / maxSeconds) * 100;
+  const userWidth = (userSeconds / maxSeconds) * 100;
+
+  return (
+    <div className="space-y-2">
+      <div className="flex justify-between text-xs font-medium">
+        <span>{label}</span>
+        <span className={userSeconds > proSeconds ? "text-destructive" : "text-green-500"}>
+          {diffStr}
+        </span>
+      </div>
+      <div className="space-y-1">
+        <div className="relative h-4 bg-muted rounded-full overflow-hidden">
+          <div
+            className="absolute top-0 left-0 h-full bg-primary/40 transition-all duration-500 ease-out"
+            style={{ width: `${proWidth}%` }}
+          />
+          <div className="absolute inset-0 flex items-center px-2 text-[10px] font-bold text-primary-foreground drop-shadow-sm pointer-events-none">
+            Pro: {proTimeStr}
+          </div>
+        </div>
+        <div className="relative h-4 bg-muted rounded-full overflow-hidden">
+          <div
+            className="absolute top-0 left-0 h-full bg-primary transition-all duration-500 ease-out"
+            style={{ width: `${userWidth}%` }}
+          />
+          <div className="absolute inset-0 flex items-center px-2 text-[10px] font-bold text-primary-foreground drop-shadow-sm pointer-events-none">
+            You: {userTimeStr}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function ProComparison({
   totalTime,
@@ -98,6 +171,10 @@ export function ProComparison({
   const [selectedPro, setSelectedPro] = useState<ProKey>('blummenfelt');
 
   const userTotalSeconds = timeToSeconds(totalTime);
+  const userSwimSeconds = timeToSeconds(swimTime);
+  const userBikeSeconds = timeToSeconds(bikeTime);
+  const userRunSeconds = timeToSeconds(runTime);
+
   const proData = PRO_PBS[selectedPro];
 
   // Create safe defaults if distance doesn't exist in data
@@ -115,6 +192,14 @@ export function ProComparison({
     );
   }
 
+  const swimProSeconds = parseSplitToSeconds(proSplits.swim);
+  const bikeProSeconds = parseSplitToSeconds(proSplits.bike);
+  const runProSeconds = parseSplitToSeconds(proSplits.run);
+
+  const swimDiff = userSwimSeconds - swimProSeconds;
+  const bikeDiff = userBikeSeconds - bikeProSeconds;
+  const runDiff = userRunSeconds - runProSeconds;
+
   const comparisonText = userTotalSeconds > proSeconds
     ? `Your time is ${((userTotalSeconds / proSeconds - 1) * 100).toFixed(0)}% slower than their record.`
     : `Your time is ${((proSeconds / userTotalSeconds - 1) * 100).toFixed(0)}% faster than their record!`;
@@ -122,7 +207,7 @@ export function ProComparison({
   return (
     <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
       <CardHeader>
-        <div className="flex justify-between items-start">
+        <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
           <div>
             <CardTitle className="text-2xl font-headline tracking-tight flex items-center gap-2">
               <Crown className="text-primary" />
@@ -133,7 +218,7 @@ export function ProComparison({
             </CardDescription>
           </div>
           <Select value={selectedPro} onValueChange={(v) => setSelectedPro(v as ProKey)}>
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-full sm:w-[200px]">
               <SelectValue placeholder="Select a pro" />
             </SelectTrigger>
             <SelectContent>
@@ -146,36 +231,48 @@ export function ProComparison({
           </Select>
         </div>
       </CardHeader>
-      <CardContent className="space-y-6">
-        <p className="text-sm text-muted-foreground">{proData.description}</p>
+      <CardContent className="space-y-8">
+        <p className="text-sm text-muted-foreground italic leading-relaxed">
+          "{proData.description}"
+        </p>
 
-        <div className="grid grid-cols-4 gap-4 text-center text-sm">
-          <div className="font-semibold text-muted-foreground">Discipline</div>
-          <div className="font-semibold text-primary">Pro</div>
-          <div className="font-semibold text-foreground">You</div>
-          <div className="font-semibold text-muted-foreground">Diff</div>
-
-          <div className="text-left font-medium">Swim</div>
-          <div className="font-mono">{proSplits.swim}</div>
-          <div className="font-mono">{formatTime(swimTime)}</div>
-          <div className="text-xs text-muted-foreground">-</div>
-
-          <div className="text-left font-medium">Bike</div>
-          <div className="font-mono">{proSplits.bike}</div>
-          <div className="font-mono">{formatTime(bikeTime)}</div>
-          <div className="text-xs text-muted-foreground">-</div>
-
-          <div className="text-left font-medium">Run</div>
-          <div className="font-mono">{proSplits.run}</div>
-          <div className="font-mono">{formatTime(runTime)}</div>
-          <div className="text-xs text-muted-foreground">-</div>
+        <div className="space-y-6">
+          <ComparisonBar
+            label="Swim"
+            proSeconds={swimProSeconds}
+            userSeconds={userSwimSeconds}
+            proTimeStr={proSplits.swim}
+            userTimeStr={formatTime(swimTime)}
+            diffStr={formatSecondsToTime(swimDiff)}
+          />
+          <ComparisonBar
+            label="Bike"
+            proSeconds={bikeProSeconds}
+            userSeconds={userBikeSeconds}
+            proTimeStr={proSplits.bike}
+            userTimeStr={formatTime(bikeTime)}
+            diffStr={formatSecondsToTime(bikeDiff)}
+          />
+          <ComparisonBar
+            label="Run"
+            proSeconds={runProSeconds}
+            userSeconds={userRunSeconds}
+            proTimeStr={proSplits.run}
+            userTimeStr={formatTime(runTime)}
+            diffStr={formatSecondsToTime(runDiff)}
+          />
         </div>
 
-        <div className="bg-muted/50 p-4 rounded-lg text-center">
-          <p className="text-sm font-semibold mb-1">Total Comparison</p>
-          <p className="font-medium text-lg">
+        <div className="bg-primary/5 border border-primary/20 p-6 rounded-xl text-center shadow-inner">
+          <p className="text-xs font-bold uppercase tracking-wider text-primary mb-2">Total Comparison</p>
+          <p className="font-headline text-xl text-foreground">
             {comparisonText}
           </p>
+          <div className="mt-4 flex justify-center gap-2 text-xs font-mono">
+            <span className="text-muted-foreground">Pro: {formatSecondsToTime(proSeconds).substring(1)}</span>
+            <span className="text-muted-foreground text-[10px] flex items-center">|</span>
+            <span className="text-primary font-bold">You: {formatTime(totalTime)}</span>
+          </div>
         </div>
       </CardContent>
     </Card>

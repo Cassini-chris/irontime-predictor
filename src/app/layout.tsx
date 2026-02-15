@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from '@/components/theme-provider';
+import { FaviconSwitcher } from '@/components/favicon-switcher';
 
 export const metadata: Metadata = {
   title: 'IronTime Predictor',
@@ -27,7 +28,7 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="font-body antialiased">
+      <body className="font-body antialiased" suppressHydrationWarning={true}>
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"
@@ -35,6 +36,7 @@ export default function RootLayout({
           disableTransitionOnChange
           themes={['light', 'dark', 'theme-roth']}
         >
+          <FaviconSwitcher />
           {children}
           <Toaster />
         </ThemeProvider>
