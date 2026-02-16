@@ -3,6 +3,7 @@ import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from '@/components/theme-provider';
 import { FaviconSwitcher } from '@/components/favicon-switcher';
+import { Navigation } from '@/components/navigation';
 
 export const metadata: Metadata = {
   title: 'IronTime Predictor',
@@ -37,6 +38,7 @@ export default function RootLayout({
           themes={['light', 'dark', 'theme-roth']}
         >
           <FaviconSwitcher />
+          <Navigation />
           {children}
           <Toaster />
         </ThemeProvider>
