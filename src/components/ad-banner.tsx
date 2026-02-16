@@ -27,17 +27,7 @@ export default function AdBanner() {
                     data-ad-format="auto"
                     data-full-width-responsive="true"
                 />
-                {/* Support Link from original site */}
-                <div className="mt-4 pt-4 border-t border-primary/10">
-                    <a
-                        href="http://deloplen.com/afu.php?zoneid=2902726"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-white/80 hover:text-white underline decoration-primary/50 underline-offset-4 transition-colors"
-                    >
-                        To support RunCulator, please click on the <u>Advertisement</u>
-                    </a>
-                </div>
+
             </div>
         </div>
     );

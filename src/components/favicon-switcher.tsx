@@ -7,7 +7,7 @@ export function FaviconSwitcher() {
     const { theme, resolvedTheme } = useTheme();
 
     useEffect(() => {
-        const currentTheme = theme === 'system' ? resolvedTheme : theme;
+        const currentTheme = theme;
 
         // Choose color based on theme
         let color = '#3b82f6'; // Default Blue (Light)
