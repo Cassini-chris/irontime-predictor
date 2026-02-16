@@ -60,11 +60,15 @@ const SteppableInput = ({
 }) => {
     const increment = () => {
         const newVal = value + step;
-        if (max === undefined || newVal <= max) onChange(newVal);
+        // Round to handle floating point precision issues
+        const roundedVal = Math.round(newVal * 10) / 10;
+        if (max === undefined || roundedVal <= max) onChange(roundedVal);
     };
     const decrement = () => {
         const newVal = value - step;
-        if (newVal >= min) onChange(newVal);
+        // Round to handle floating point precision issues
+        const roundedVal = Math.round(newVal * 10) / 10;
+        if (roundedVal >= min) onChange(roundedVal);
     };
 
     return (
@@ -329,8 +333,8 @@ export function RunculatorCalculator() {
                                     </div>
                                     <div className="mt-8">
                                         <RunResultsChart
-                                            distance={unit === 'km' ? paceDistance : milesToKm(paceDistance)}
-                                            durationSeconds={timeToSeconds(paceDuration)}
+                                            distance={Math.max(0.1, unit === 'km' ? paceDistance : milesToKm(paceDistance))}
+                                            durationSeconds={Math.max(1, timeToSeconds(paceDuration))}
                                         />
                                     </div>
                                 </div>
@@ -361,8 +365,8 @@ export function RunculatorCalculator() {
                                     </div>
                                     <div className="mt-8">
                                         <RunResultsChart
-                                            distance={unit === 'km' ? distanceResult : milesToKm(distanceResult)}
-                                            durationSeconds={timeToSeconds(distDuration)}
+                                            distance={Math.max(0.1, unit === 'km' ? distanceResult : milesToKm(distanceResult))}
+                                            durationSeconds={Math.max(1, timeToSeconds(distDuration))}
                                         />
                                     </div>
                                 </div>
@@ -404,8 +408,8 @@ export function RunculatorCalculator() {
                                     </div>
                                     <div className="mt-8">
                                         <RunResultsChart
-                                            distance={unit === 'km' ? durDistance : milesToKm(durDistance)}
-                                            durationSeconds={timeToSeconds(durationResult)}
+                                            distance={Math.max(0.1, unit === 'km' ? durDistance : milesToKm(durDistance))}
+                                            durationSeconds={Math.max(1, timeToSeconds(durationResult))}
                                         />
                                     </div>
                                 </div>
