@@ -7,7 +7,7 @@ import { ThemeToggle } from '@/components/theme-toggle';
 export default function RunculatorPage() {
     return (
         <div className="flex flex-col min-h-screen bg-background">
-            <main className="flex-grow flex flex-col items-center justify-center p-4 sm:p-8 md:p-12 lg:p-24">
+            <main className="flex-grow flex flex-col items-center p-4 sm:p-8 md:p-12 lg:p-24">
                 <div className="w-full max-w-6xl space-y-8">
                     <header className="text-center space-y-4 relative">
                         <div className="absolute top-0 right-0">

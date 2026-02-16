@@ -34,6 +34,7 @@ import { GoalSetter } from './goal-setter';
 import { ProComparison } from './pro-comparison';
 import { NutritionCalculator } from './nutrition-calculator';
 import { RaceDayChecklist } from './race-day-checklist';
+import AdBanner from './ad-banner';
 import { RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -518,6 +519,7 @@ export function IronTimePredictor({
             distance={distance}
           />
           <RaceDayChecklist />
+          <AdBanner />
         </div>
       </div>
     </>

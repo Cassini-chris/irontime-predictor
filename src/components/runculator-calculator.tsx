@@ -1,6 +1,4 @@
-'use client';
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -14,7 +12,8 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Plus, Minus } from 'lucide-react';
+import AdBanner from './ad-banner';
 
 type CalculatorMode = 'pace' | 'distance' | 'duration';
 type DistanceUnit = 'km' | 'mi';
@@ -40,6 +39,73 @@ const EVENTS = [
     { name: '100 miles', distance: 160.934 },
 ];
 
+const SteppableInput = ({
+    value,
+    onChange,
+    min = 0,
+    max,
+    step = 1,
+    id,
+    placeholder,
+    className = ""
+}: {
+    value: number;
+    onChange: (val: number) => void;
+    min?: number;
+    max?: number;
+    step?: number;
+    id?: string;
+    placeholder?: string;
+    className?: string;
+}) => {
+    const increment = () => {
+        const newVal = value + step;
+        if (max === undefined || newVal <= max) onChange(newVal);
+    };
+    const decrement = () => {
+        const newVal = value - step;
+        if (newVal >= min) onChange(newVal);
+    };
+
+    return (
+        <div className="flex flex-col gap-1 items-center">
+            <div className="relative flex items-center w-full group">
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute left-0 h-full w-8 rounded-r-none border-r hover:bg-muted/80 z-10"
+                    onClick={decrement}
+                    type="button"
+                >
+                    <Minus className="h-3 w-3" />
+                </Button>
+                <Input
+                    id={id}
+                    type="number"
+                    value={value}
+                    onChange={(e) => {
+                        const val = parseFloat(e.target.value);
+                        if (!isNaN(val)) onChange(val);
+                        else if (e.target.value === '') onChange(0);
+                    }}
+                    onFocus={(e) => e.target.select()}
+                    placeholder={placeholder}
+                    className={`text-center font-mono px-8 focus-visible:ring-1 focus-visible:ring-offset-0 ${className}`}
+                />
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-0 h-full w-8 rounded-l-none border-l hover:bg-muted/80 z-10"
+                    onClick={increment}
+                    type="button"
+                >
+                    <Plus className="h-3 w-3" />
+                </Button>
+            </div>
+        </div>
+    );
+};
+
 export function RunculatorCalculator() {
     const [mode, setMode] = useState<CalculatorMode>('pace');
     const [unit, setUnit] = useState<DistanceUnit>('km');
@@ -63,7 +129,7 @@ export function RunculatorCalculator() {
 
     // Helper functions
     const timeToSeconds = (time: Time): number => {
-        return time.h * 3600 + time.m * 60 + time.s;
+        return (time.h || 0) * 3600 + (time.m || 0) * 60 + (time.s || 0);
     };
 
     const secondsToTime = (seconds: number): Time => {
@@ -89,43 +155,42 @@ export function RunculatorCalculator() {
         return `${mm}:${ss} per ${unit}`;
     };
 
-    // Calculate Pace
-    const calculatePace = () => {
-        const totalSeconds = timeToSeconds(paceDuration);
-        const distanceInKm = unit === 'km' ? paceDistance : milesToKm(paceDistance);
-
-        if (distanceInKm === 0) {
-            setPaceResult(null);
-            return;
+    // Real-time calculation effects
+    useEffect(() => {
+        if (mode === 'pace') {
+            const totalSeconds = timeToSeconds(paceDuration);
+            const distanceInKm = unit === 'km' ? paceDistance : milesToKm(paceDistance);
+            if (distanceInKm > 0) {
+                const paceSeconds = totalSeconds / distanceInKm;
+                setPaceResult(secondsToTime(paceSeconds));
+            } else {
+                setPaceResult(null);
+            }
         }
+    }, [paceDuration, paceDistance, unit, mode]);
 
-        const paceSeconds = totalSeconds / distanceInKm;
-        setPaceResult(secondsToTime(paceSeconds));
-    };
-
-    // Calculate Distance
-    const calculateDistance = () => {
-        const totalSeconds = timeToSeconds(distDuration);
-        const paceSeconds = timeToSeconds(distPace);
-
-        if (paceSeconds === 0) {
-            setDistanceResult(null);
-            return;
+    useEffect(() => {
+        if (mode === 'distance') {
+            const totalSeconds = timeToSeconds(distDuration);
+            const paceSeconds = timeToSeconds(distPace);
+            if (paceSeconds > 0) {
+                const distanceInKm = totalSeconds / paceSeconds;
+                const result = unit === 'km' ? distanceInKm : kmToMiles(distanceInKm);
+                setDistanceResult(parseFloat(result.toFixed(2)));
+            } else {
+                setDistanceResult(null);
+            }
         }
+    }, [distDuration, distPace, unit, mode]);
 
-        const distanceInKm = totalSeconds / paceSeconds;
-        const result = unit === 'km' ? distanceInKm : kmToMiles(distanceInKm);
-        setDistanceResult(parseFloat(result.toFixed(2)));
-    };
-
-    // Calculate Duration
-    const calculateDuration = () => {
-        const distanceInKm = unit === 'km' ? durDistance : milesToKm(durDistance);
-        const paceSeconds = timeToSeconds(durPace);
-
-        const totalSeconds = distanceInKm * paceSeconds;
-        setDurationResult(secondsToTime(totalSeconds));
-    };
+    useEffect(() => {
+        if (mode === 'duration') {
+            const distanceInKm = unit === 'km' ? durDistance : milesToKm(durDistance);
+            const paceSeconds = timeToSeconds(durPace);
+            const totalSeconds = distanceInKm * paceSeconds;
+            setDurationResult(secondsToTime(totalSeconds));
+        }
+    }, [durDistance, durPace, unit, mode]);
 
     const TimeInputGroup = ({
         time,
@@ -136,42 +201,36 @@ export function RunculatorCalculator() {
         onChange: (time: Time) => void;
         label: string;
     }) => (
-        <div className="space-y-2">
-            <Label className="text-sm font-medium">{label}</Label>
-            <div className="grid grid-cols-3 gap-2">
-                <div>
-                    <Label htmlFor={`${label}-h`} className="text-xs text-muted-foreground">Hours</Label>
-                    <Input
+        <div className="space-y-3">
+            <Label className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{label}</Label>
+            <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-1.5">
+                    <Label htmlFor={`${label}-h`} className="text-xs text-muted-foreground block text-center">Hours</Label>
+                    <SteppableInput
                         id={`${label}-h`}
-                        type="number"
-                        min="0"
                         value={time.h}
-                        onChange={(e) => onChange({ ...time, h: parseInt(e.target.value) || 0 })}
-                        className="text-center"
+                        onChange={(h) => onChange({ ...time, h })}
+                        min={0}
                     />
                 </div>
-                <div>
-                    <Label htmlFor={`${label}-m`} className="text-xs text-muted-foreground">Minutes</Label>
-                    <Input
+                <div className="space-y-1.5">
+                    <Label htmlFor={`${label}-m`} className="text-xs text-muted-foreground block text-center">Minutes</Label>
+                    <SteppableInput
                         id={`${label}-m`}
-                        type="number"
-                        min="0"
-                        max="59"
                         value={time.m}
-                        onChange={(e) => onChange({ ...time, m: parseInt(e.target.value) || 0 })}
-                        className="text-center"
+                        onChange={(m) => onChange({ ...time, m })}
+                        min={0}
+                        max={59}
                     />
                 </div>
-                <div>
-                    <Label htmlFor={`${label}-s`} className="text-xs text-muted-foreground">Seconds</Label>
-                    <Input
+                <div className="space-y-1.5">
+                    <Label htmlFor={`${label}-s`} className="text-xs text-muted-foreground block text-center">Seconds</Label>
+                    <SteppableInput
                         id={`${label}-s`}
-                        type="number"
-                        min="0"
-                        max="59"
                         value={time.s}
-                        onChange={(e) => onChange({ ...time, s: parseInt(e.target.value) || 0 })}
-                        className="text-center"
+                        onChange={(s) => onChange({ ...time, s })}
+                        min={0}
+                        max={59}
                     />
                 </div>
             </div>
@@ -181,7 +240,7 @@ export function RunculatorCalculator() {
     const EventSelection = ({ onSelect }: { onSelect: (distance: number) => void }) => (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="w-fit flex gap-2">
+                <Button variant="outline" size="sm" className="h-10 px-4 flex gap-2 border-primary/20 hover:border-primary/50 transition-colors">
                     Select Event <ChevronDown className="h-4 w-4" />
                 </Button>
             </DropdownMenuTrigger>
@@ -193,6 +252,7 @@ export function RunculatorCalculator() {
                             onSelect(event.distance);
                             setUnit('km');
                         }}
+                        className="cursor-pointer"
                     >
                         {event.name}
                     </DropdownMenuItem>
@@ -202,168 +262,159 @@ export function RunculatorCalculator() {
     );
 
     return (
-        <Card className="w-full max-w-4xl mx-auto">
-            <CardHeader>
-                <CardTitle className="text-2xl font-bold text-center">Pace Calculator</CardTitle>
-                <div className="flex justify-center mt-4">
-                    <RadioGroup
-                        value={unit}
-                        onValueChange={(value) => setUnit(value as DistanceUnit)}
-                        className="flex gap-4"
-                    >
-                        <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="km" id="km" />
-                            <Label htmlFor="km" className="cursor-pointer">Kilometers</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="mi" id="mi" />
-                            <Label htmlFor="mi" className="cursor-pointer">Miles</Label>
-                        </div>
-                    </RadioGroup>
-                </div>
-            </CardHeader>
-            <CardContent>
-                <Tabs value={mode} onValueChange={(value) => setMode(value as CalculatorMode)}>
-                    <TabsList className="grid w-full grid-cols-3">
-                        <TabsTrigger value="pace">Pace</TabsTrigger>
-                        <TabsTrigger value="distance">Distance</TabsTrigger>
-                        <TabsTrigger value="duration">Duration</TabsTrigger>
-                    </TabsList>
+        <>
+            <Card className="w-full max-w-6xl mx-auto shadow-xl border-t-4 border-t-primary">
+                <CardHeader className="pb-4">
+                    <CardTitle className="text-3xl font-black text-center tracking-tight">Pace Calculator</CardTitle>
+                    <div className="flex justify-center mt-6">
+                        <RadioGroup
+                            value={unit}
+                            onValueChange={(value) => setUnit(value as DistanceUnit)}
+                            className="flex gap-8 p-1 bg-muted rounded-full px-6 py-2"
+                        >
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="km" id="km" />
+                                <Label htmlFor="km" className="cursor-pointer font-medium">Kilometers</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="mi" id="mi" />
+                                <Label htmlFor="mi" className="cursor-pointer font-medium">Miles</Label>
+                            </div>
+                        </RadioGroup>
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <Tabs value={mode} onValueChange={(value) => setMode(value as CalculatorMode)} className="w-full">
+                        <TabsList className="grid w-full grid-cols-3 h-12 mb-8 bg-muted/50">
+                            <TabsTrigger value="pace" className="text-base font-bold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Pace</TabsTrigger>
+                            <TabsTrigger value="distance" className="text-base font-bold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Distance</TabsTrigger>
+                            <TabsTrigger value="duration" className="text-base font-bold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Duration</TabsTrigger>
+                        </TabsList>
 
-                    {/* Pace Calculator */}
-                    <TabsContent value="pace" className="space-y-6 mt-6">
-                        <TimeInputGroup
-                            time={paceDuration}
-                            onChange={setPaceDuration}
-                            label="Duration"
-                        />
+                        {/* Pace Calculator */}
+                        <TabsContent value="pace" className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                            <TimeInputGroup
+                                time={paceDuration}
+                                onChange={setPaceDuration}
+                                label="Duration"
+                            />
 
-                        <div className="space-y-4">
-                            <div className="flex items-end justify-between gap-4">
-                                <div className="space-y-2 flex-grow">
-                                    <Label htmlFor="pace-distance">Distance ({unit})</Label>
-                                    <Input
-                                        id="pace-distance"
-                                        type="number"
-                                        min="0"
-                                        step="0.1"
-                                        value={paceDistance}
-                                        onChange={(e) => setPaceDistance(parseFloat(e.target.value) || 0)}
-                                        className="text-center text-lg"
-                                    />
-                                </div>
-                                <div className="pb-0.5">
+                            <div className="space-y-4">
+                                <Label htmlFor="pace-distance" className="text-sm font-semibold text-muted-foreground uppercase tracking-wider block">Distance ({unit})</Label>
+                                <div className="flex items-center gap-4">
+                                    <div className="flex-grow">
+                                        <SteppableInput
+                                            id="pace-distance"
+                                            value={paceDistance}
+                                            onChange={setPaceDistance}
+                                            min={0}
+                                            step={0.1}
+                                            className="text-2xl h-14"
+                                        />
+                                    </div>
                                     <EventSelection onSelect={setPaceDistance} />
                                 </div>
                             </div>
-                        </div>
 
-                        <Button onClick={calculatePace} className="w-full" size="lg">
-                            Calculate Pace
-                        </Button>
-
-                        {paceResult && (
-                            <>
-                                <div className="mt-6 p-6 bg-primary/10 rounded-lg text-center">
-                                    <p className="text-sm text-muted-foreground mb-2">Pace per {unit}</p>
-                                    <p className="text-4xl font-bold text-primary">
-                                        {formatPace(paceResult, unit)}
-                                    </p>
-                                    <p className="text-sm text-muted-foreground mt-2">
-                                        Speed: {(paceDistance / (timeToSeconds(paceDuration) / 3600)).toFixed(2)} {unit}/h
-                                    </p>
+                            {paceResult && (
+                                <div className="mt-8">
+                                    <div className="p-8 bg-primary/5 border-2 border-primary/10 rounded-2xl text-center space-y-2 transform transition-all hover:scale-[1.01]">
+                                        <p className="text-xs font-black uppercase tracking-[0.2em] text-primary/60">Estimated Pace per {unit}</p>
+                                        <p className="text-5xl font-black text-primary tracking-tighter">
+                                            {formatPace(paceResult, unit)}
+                                        </p>
+                                        <div className="pt-4 flex justify-center gap-4 text-sm font-medium text-muted-foreground">
+                                            <span className="bg-background px-3 py-1 rounded-full border">Speed: {(paceDistance / (timeToSeconds(paceDuration) / 3600)).toFixed(2)} {unit}/h</span>
+                                        </div>
+                                    </div>
+                                    <div className="mt-8">
+                                        <RunResultsChart
+                                            distance={unit === 'km' ? paceDistance : milesToKm(paceDistance)}
+                                            durationSeconds={timeToSeconds(paceDuration)}
+                                        />
+                                    </div>
                                 </div>
-                                <RunResultsChart
-                                    distance={unit === 'km' ? paceDistance : milesToKm(paceDistance)}
-                                    durationSeconds={timeToSeconds(paceDuration)}
-                                />
-                            </>
-                        )}
-                    </TabsContent>
+                            )}
+                        </TabsContent>
 
-                    {/* Distance Calculator */}
-                    <TabsContent value="distance" className="space-y-6 mt-6">
-                        <TimeInputGroup
-                            time={distDuration}
-                            onChange={setDistDuration}
-                            label="Duration"
-                        />
+                        {/* Distance Calculator */}
+                        <TabsContent value="distance" className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                            <TimeInputGroup
+                                time={distDuration}
+                                onChange={setDistDuration}
+                                label="Duration"
+                            />
 
-                        <TimeInputGroup
-                            time={distPace}
-                            onChange={setDistPace}
-                            label={`Pace (per ${unit})`}
-                        />
+                            <TimeInputGroup
+                                time={distPace}
+                                onChange={setDistPace}
+                                label={`Pace (per ${unit})`}
+                            />
 
-                        <Button onClick={calculateDistance} className="w-full" size="lg">
-                            Calculate Distance
-                        </Button>
-
-                        {distanceResult !== null && (
-                            <>
-                                <div className="mt-6 p-6 bg-primary/10 rounded-lg text-center">
-                                    <p className="text-sm text-muted-foreground mb-2">Distance</p>
-                                    <p className="text-4xl font-bold text-primary">
-                                        {distanceResult} {unit}
-                                    </p>
+                            {distanceResult !== null && (
+                                <div className="mt-8">
+                                    <div className="p-8 bg-primary/5 border-2 border-primary/10 rounded-2xl text-center space-y-2 transform transition-all hover:scale-[1.01]">
+                                        <p className="text-xs font-black uppercase tracking-[0.2em] text-primary/60">Estimated Distance</p>
+                                        <p className="text-5xl font-black text-primary tracking-tighter">
+                                            {distanceResult} {unit}
+                                        </p>
+                                    </div>
+                                    <div className="mt-8">
+                                        <RunResultsChart
+                                            distance={unit === 'km' ? distanceResult : milesToKm(distanceResult)}
+                                            durationSeconds={timeToSeconds(distDuration)}
+                                        />
+                                    </div>
                                 </div>
-                                <RunResultsChart
-                                    distance={unit === 'km' ? distanceResult : milesToKm(distanceResult)}
-                                    durationSeconds={timeToSeconds(distDuration)}
-                                />
-                            </>
-                        )}
-                    </TabsContent>
+                            )}
+                        </TabsContent>
 
-                    {/* Duration Calculator */}
-                    <TabsContent value="duration" className="space-y-6 mt-6">
-                        <div className="space-y-4">
-                            <div className="flex items-end justify-between gap-4">
-                                <div className="space-y-2 flex-grow">
-                                    <Label htmlFor="dur-distance">Distance ({unit})</Label>
-                                    <Input
-                                        id="dur-distance"
-                                        type="number"
-                                        min="0"
-                                        step="0.1"
-                                        value={durDistance}
-                                        onChange={(e) => setDurDistance(parseFloat(e.target.value) || 0)}
-                                        className="text-center text-lg"
-                                    />
-                                </div>
-                                <div className="pb-0.5">
+                        {/* Duration Calculator */}
+                        <TabsContent value="duration" className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                            <div className="space-y-4">
+                                <Label htmlFor="dur-distance" className="text-sm font-semibold text-muted-foreground uppercase tracking-wider block">Distance ({unit})</Label>
+                                <div className="flex items-center gap-4">
+                                    <div className="flex-grow">
+                                        <SteppableInput
+                                            id="dur-distance"
+                                            value={durDistance}
+                                            onChange={setDurDistance}
+                                            min={0}
+                                            step={0.1}
+                                            className="text-2xl h-14"
+                                        />
+                                    </div>
                                     <EventSelection onSelect={setDurDistance} />
                                 </div>
                             </div>
-                        </div>
 
-                        <TimeInputGroup
-                            time={durPace}
-                            onChange={setDurPace}
-                            label={`Pace (per ${unit})`}
-                        />
+                            <TimeInputGroup
+                                time={durPace}
+                                onChange={setDurPace}
+                                label={`Pace (per ${unit})`}
+                            />
 
-                        <Button onClick={calculateDuration} className="w-full" size="lg">
-                            Calculate Duration
-                        </Button>
-
-                        {durationResult && (
-                            <>
-                                <div className="mt-6 p-6 bg-primary/10 rounded-lg text-center">
-                                    <p className="text-sm text-muted-foreground mb-2">Duration</p>
-                                    <p className="text-4xl font-bold text-primary">
-                                        {formatTime(durationResult)}
-                                    </p>
+                            {durationResult && (
+                                <div className="mt-8">
+                                    <div className="p-8 bg-primary/5 border-2 border-primary/10 rounded-2xl text-center space-y-2 transform transition-all hover:scale-[1.01]">
+                                        <p className="text-xs font-black uppercase tracking-[0.2em] text-primary/60">Estimated Duration</p>
+                                        <p className="text-5xl font-black text-primary tracking-tighter">
+                                            {formatTime(durationResult)}
+                                        </p>
+                                    </div>
+                                    <div className="mt-8">
+                                        <RunResultsChart
+                                            distance={unit === 'km' ? durDistance : milesToKm(durDistance)}
+                                            durationSeconds={timeToSeconds(durationResult)}
+                                        />
+                                    </div>
                                 </div>
-                                <RunResultsChart
-                                    distance={unit === 'km' ? durDistance : milesToKm(durDistance)}
-                                    durationSeconds={timeToSeconds(durationResult)}
-                                />
-                            </>
-                        )}
-                    </TabsContent>
-                </Tabs>
-            </CardContent>
-        </Card>
+                            )}
+                        </TabsContent>
+                    </Tabs>
+                </CardContent>
+            </Card>
+            <AdBanner />
+        </>
     );
 }

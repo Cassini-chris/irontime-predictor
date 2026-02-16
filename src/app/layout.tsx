@@ -4,6 +4,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from '@/components/theme-provider';
 import { FaviconSwitcher } from '@/components/favicon-switcher';
 import { Navigation } from '@/components/navigation';
+import Script from 'next/script';
 
 export const metadata: Metadata = {
   title: 'IronTime Predictor',
@@ -41,6 +42,12 @@ export default function RootLayout({
           <Navigation />
           {children}
           <Toaster />
+          <Script
+            async
+            src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3842615578259450"
+            crossOrigin="anonymous"
+            strategy="lazyOnload"
+          />
         </ThemeProvider>
       </body>
     </html>
