@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
+import { RunResultsChart } from '@/components/run-results-chart';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -23,8 +24,6 @@ interface Time {
     m: number;
     s: number;
 }
-
-const zeroTime: Time = { h: 0, m: 0, s: 0 };
 
 const EVENTS = [
     { name: '100m', distance: 0.1 },
@@ -264,15 +263,21 @@ export function RunculatorCalculator() {
                         </Button>
 
                         {paceResult && (
-                            <div className="mt-6 p-6 bg-primary/10 rounded-lg text-center">
-                                <p className="text-sm text-muted-foreground mb-2">Pace per {unit}</p>
-                                <p className="text-4xl font-bold text-primary">
-                                    {formatPace(paceResult, unit)}
-                                </p>
-                                <p className="text-sm text-muted-foreground mt-2">
-                                    Speed: {(paceDistance / (timeToSeconds(paceDuration) / 3600)).toFixed(2)} {unit}/h
-                                </p>
-                            </div>
+                            <>
+                                <div className="mt-6 p-6 bg-primary/10 rounded-lg text-center">
+                                    <p className="text-sm text-muted-foreground mb-2">Pace per {unit}</p>
+                                    <p className="text-4xl font-bold text-primary">
+                                        {formatPace(paceResult, unit)}
+                                    </p>
+                                    <p className="text-sm text-muted-foreground mt-2">
+                                        Speed: {(paceDistance / (timeToSeconds(paceDuration) / 3600)).toFixed(2)} {unit}/h
+                                    </p>
+                                </div>
+                                <RunResultsChart
+                                    distance={unit === 'km' ? paceDistance : milesToKm(paceDistance)}
+                                    durationSeconds={timeToSeconds(paceDuration)}
+                                />
+                            </>
                         )}
                     </TabsContent>
 
@@ -295,12 +300,18 @@ export function RunculatorCalculator() {
                         </Button>
 
                         {distanceResult !== null && (
-                            <div className="mt-6 p-6 bg-primary/10 rounded-lg text-center">
-                                <p className="text-sm text-muted-foreground mb-2">Distance</p>
-                                <p className="text-4xl font-bold text-primary">
-                                    {distanceResult} {unit}
-                                </p>
-                            </div>
+                            <>
+                                <div className="mt-6 p-6 bg-primary/10 rounded-lg text-center">
+                                    <p className="text-sm text-muted-foreground mb-2">Distance</p>
+                                    <p className="text-4xl font-bold text-primary">
+                                        {distanceResult} {unit}
+                                    </p>
+                                </div>
+                                <RunResultsChart
+                                    distance={unit === 'km' ? distanceResult : milesToKm(distanceResult)}
+                                    durationSeconds={timeToSeconds(distDuration)}
+                                />
+                            </>
                         )}
                     </TabsContent>
 
@@ -337,12 +348,18 @@ export function RunculatorCalculator() {
                         </Button>
 
                         {durationResult && (
-                            <div className="mt-6 p-6 bg-primary/10 rounded-lg text-center">
-                                <p className="text-sm text-muted-foreground mb-2">Duration</p>
-                                <p className="text-4xl font-bold text-primary">
-                                    {formatTime(durationResult)}
-                                </p>
-                            </div>
+                            <>
+                                <div className="mt-6 p-6 bg-primary/10 rounded-lg text-center">
+                                    <p className="text-sm text-muted-foreground mb-2">Duration</p>
+                                    <p className="text-4xl font-bold text-primary">
+                                        {formatTime(durationResult)}
+                                    </p>
+                                </div>
+                                <RunResultsChart
+                                    distance={unit === 'km' ? durDistance : milesToKm(durDistance)}
+                                    durationSeconds={timeToSeconds(durationResult)}
+                                />
+                            </>
                         )}
                     </TabsContent>
                 </Tabs>
