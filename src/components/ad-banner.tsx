@@ -1,14 +1,19 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 export default function AdBanner() {
+    const isAdLoaded = useRef(false);
+
     useEffect(() => {
-        try {
-            // @ts-ignore
-            (window.adsbygoogle = window.adsbygoogle || []).push({});
-        } catch (e) {
-            console.error("AdSense error:", e);
+        if (!isAdLoaded.current) {
+            try {
+                // @ts-ignore
+                (window.adsbygoogle = window.adsbygoogle || []).push({});
+                isAdLoaded.current = true;
+            } catch (e) {
+                console.error("AdSense error:", e);
+            }
         }
     }, []);
 

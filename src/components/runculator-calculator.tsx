@@ -110,6 +110,77 @@ const SteppableInput = ({
     );
 };
 
+const TimeInputGroup = ({
+    time,
+    onChange,
+    label
+}: {
+    time: Time;
+    onChange: (time: Time) => void;
+    label: string;
+}) => (
+    <div className="space-y-3">
+        <Label className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{label}</Label>
+        <div className="grid grid-cols-3 gap-4">
+            <div className="space-y-1.5">
+                <Label htmlFor={`${label}-h`} className="text-xs text-muted-foreground block text-center">Hours</Label>
+                <SteppableInput
+                    id={`${label}-h`}
+                    value={time.h}
+                    onChange={(h) => onChange({ ...time, h })}
+                    min={0}
+                />
+            </div>
+            <div className="space-y-1.5">
+                <Label htmlFor={`${label}-m`} className="text-xs text-muted-foreground block text-center">Minutes</Label>
+                <SteppableInput
+                    id={`${label}-m`}
+                    value={time.m}
+                    onChange={(m) => onChange({ ...time, m })}
+                    min={0}
+                    max={59}
+                />
+            </div>
+            <div className="space-y-1.5">
+                <Label htmlFor={`${label}-s`} className="text-xs text-muted-foreground block text-center">Seconds</Label>
+                <SteppableInput
+                    id={`${label}-s`}
+                    value={time.s}
+                    onChange={(s) => onChange({ ...time, s })}
+                    min={0}
+                    max={59}
+                />
+            </div>
+        </div>
+    </div>
+);
+
+const EventSelection = ({ onSelect, onSetUnit }: { onSelect: (distance: number) => void, onSetUnit: (unit: DistanceUnit) => void }) => (
+    <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="h-10 px-4 flex gap-2 border-primary/20 hover:border-primary/50 transition-colors">
+                Select Event <ChevronDown className="h-4 w-4" />
+            </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="max-h-[300px] overflow-y-auto">
+            {EVENTS.map((event) => (
+                <DropdownMenuItem
+                    key={event.name}
+                    onClick={() => {
+                        onSelect(event.distance);
+                        onSetUnit('km');
+                    }}
+                    className="cursor-pointer"
+                >
+                    {event.name}
+                </DropdownMenuItem>
+            ))}
+        </DropdownMenuContent>
+    </DropdownMenu>
+);
+
+
+
 export function RunculatorCalculator() {
     const [mode, setMode] = useState<CalculatorMode>('pace');
     const [unit, setUnit] = useState<DistanceUnit>('km');
@@ -196,74 +267,7 @@ export function RunculatorCalculator() {
         }
     }, [durDistance, durPace, unit, mode]);
 
-    const TimeInputGroup = ({
-        time,
-        onChange,
-        label
-    }: {
-        time: Time;
-        onChange: (time: Time) => void;
-        label: string;
-    }) => (
-        <div className="space-y-3">
-            <Label className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{label}</Label>
-            <div className="grid grid-cols-3 gap-4">
-                <div className="space-y-1.5">
-                    <Label htmlFor={`${label}-h`} className="text-xs text-muted-foreground block text-center">Hours</Label>
-                    <SteppableInput
-                        id={`${label}-h`}
-                        value={time.h}
-                        onChange={(h) => onChange({ ...time, h })}
-                        min={0}
-                    />
-                </div>
-                <div className="space-y-1.5">
-                    <Label htmlFor={`${label}-m`} className="text-xs text-muted-foreground block text-center">Minutes</Label>
-                    <SteppableInput
-                        id={`${label}-m`}
-                        value={time.m}
-                        onChange={(m) => onChange({ ...time, m })}
-                        min={0}
-                        max={59}
-                    />
-                </div>
-                <div className="space-y-1.5">
-                    <Label htmlFor={`${label}-s`} className="text-xs text-muted-foreground block text-center">Seconds</Label>
-                    <SteppableInput
-                        id={`${label}-s`}
-                        value={time.s}
-                        onChange={(s) => onChange({ ...time, s })}
-                        min={0}
-                        max={59}
-                    />
-                </div>
-            </div>
-        </div>
-    );
 
-    const EventSelection = ({ onSelect }: { onSelect: (distance: number) => void }) => (
-        <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="h-10 px-4 flex gap-2 border-primary/20 hover:border-primary/50 transition-colors">
-                    Select Event <ChevronDown className="h-4 w-4" />
-                </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="max-h-[300px] overflow-y-auto">
-                {EVENTS.map((event) => (
-                    <DropdownMenuItem
-                        key={event.name}
-                        onClick={() => {
-                            onSelect(event.distance);
-                            setUnit('km');
-                        }}
-                        className="cursor-pointer"
-                    >
-                        {event.name}
-                    </DropdownMenuItem>
-                ))}
-            </DropdownMenuContent>
-        </DropdownMenu>
-    );
 
     return (
         <>
@@ -316,7 +320,7 @@ export function RunculatorCalculator() {
                                             className="text-2xl h-14"
                                         />
                                     </div>
-                                    <EventSelection onSelect={setPaceDistance} />
+                                    <EventSelection onSelect={setPaceDistance} onSetUnit={setUnit} />
                                 </div>
                             </div>
 
@@ -388,7 +392,7 @@ export function RunculatorCalculator() {
                                             className="text-2xl h-14"
                                         />
                                     </div>
-                                    <EventSelection onSelect={setDurDistance} />
+                                    <EventSelection onSelect={setDurDistance} onSetUnit={setUnit} />
                                 </div>
                             </div>
 

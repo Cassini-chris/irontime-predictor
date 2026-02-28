@@ -8,8 +8,10 @@ export function Navigation() {
     const pathname = usePathname();
 
     const navItems = [
-        { name: 'Triathlon Calculator', href: '/' },
-        { name: 'Runculator', href: '/runculator' },
+        { name: 'Runculator', href: '/' },
+        { name: 'Triathlon Calculator', href: '/triathlon' },
+        { name: 'Race Predictor', href: '/race-predictor' },
+        { name: 'Training Paces', href: '/training-paces' },
     ];
 
     return (
