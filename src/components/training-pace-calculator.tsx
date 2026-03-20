@@ -6,13 +6,16 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Button } from '@/components/ui/button';
+import { SteppableInput } from '@/components/ui/steppable-input';
+import { TimeInputGroup } from '@/components/time-input-group';
+import { cn } from '@/lib/utils';
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { ChevronDown, Plus, Minus, Activity, Wind, Zap, Gauge, HeartPulse, Trophy } from 'lucide-react';
+import { ChevronDown, Activity, Wind, Zap, Gauge, HeartPulse, Trophy } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, Cell } from 'recharts';
 import AdBanner from './ad-banner';
 
@@ -32,120 +35,6 @@ const EVENTS = [
     { name: 'Half Marathon', distance: 21.0975 },
     { name: 'Marathon', distance: 42.195 },
 ];
-
-const SteppableInput = ({
-    value,
-    onChange,
-    min = 0,
-    max,
-    step = 1,
-    id,
-    placeholder,
-    className = ""
-}: {
-    value: number;
-    onChange: (val: number) => void;
-    min?: number;
-    max?: number;
-    step?: number;
-    id?: string;
-    placeholder?: string;
-    className?: string;
-}) => {
-    const increment = () => {
-        const newVal = value + step;
-        const roundedVal = Math.round(newVal * 10) / 10;
-        if (max === undefined || roundedVal <= max) onChange(roundedVal);
-    };
-    const decrement = () => {
-        const newVal = value - step;
-        const roundedVal = Math.round(newVal * 10) / 10;
-        if (roundedVal >= min) onChange(roundedVal);
-    };
-
-    return (
-        <div className="flex flex-col gap-1 items-center">
-            <div className="relative flex items-center w-full group">
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    className="absolute left-0 h-full w-8 rounded-r-none border-r hover:bg-muted/80 z-10"
-                    onClick={decrement}
-                    type="button"
-                >
-                    <Minus className="h-3 w-3" />
-                </Button>
-                <Input
-                    id={id}
-                    type="number"
-                    value={value}
-                    onChange={(e) => {
-                        const val = parseFloat(e.target.value);
-                        if (!isNaN(val)) onChange(val);
-                        else if (e.target.value === '') onChange(0);
-                    }}
-                    onFocus={(e) => e.target.select()}
-                    placeholder={placeholder}
-                    className={`text-center font-mono px-8 focus-visible:ring-1 focus-visible:ring-offset-0 ${className}`}
-                />
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-0 h-full w-8 rounded-l-none border-l hover:bg-muted/80 z-10"
-                    onClick={increment}
-                    type="button"
-                >
-                    <Plus className="h-3 w-3" />
-                </Button>
-            </div>
-        </div>
-    );
-};
-
-const TimeInputGroup = ({
-    time,
-    onChange,
-    label
-}: {
-    time: Time;
-    onChange: (time: Time) => void;
-    label: string;
-}) => (
-    <div className="space-y-3">
-        <Label className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{label}</Label>
-        <div className="grid grid-cols-3 gap-4">
-            <div className="space-y-1.5">
-                <Label htmlFor={`${label}-h`} className="text-xs text-muted-foreground block text-center">Hours</Label>
-                <SteppableInput
-                    id={`${label}-h`}
-                    value={time.h}
-                    onChange={(h) => onChange({ ...time, h })}
-                    min={0}
-                />
-            </div>
-            <div className="space-y-1.5">
-                <Label htmlFor={`${label}-m`} className="text-xs text-muted-foreground block text-center">Minutes</Label>
-                <SteppableInput
-                    id={`${label}-m`}
-                    value={time.m}
-                    onChange={(m) => onChange({ ...time, m })}
-                    min={0}
-                    max={59}
-                />
-            </div>
-            <div className="space-y-1.5">
-                <Label htmlFor={`${label}-s`} className="text-xs text-muted-foreground block text-center">Seconds</Label>
-                <SteppableInput
-                    id={`${label}-s`}
-                    value={time.s}
-                    onChange={(s) => onChange({ ...time, s })}
-                    min={0}
-                    max={59}
-                />
-            </div>
-        </div>
-    </div>
-);
 
 const EventSelection = ({ onSelect, onSetUnit }: { onSelect: (distance: number) => void, onSetUnit: (unit: DistanceUnit) => void }) => (
     <DropdownMenu>
@@ -273,7 +162,7 @@ export function TrainingPaceCalculator() {
                 <CardContent className="space-y-8">
                     <TimeInputGroup
                         time={duration}
-                        onChange={setDuration}
+                        setTime={setDuration}
                         label="Race/Effort Duration"
                     />
 

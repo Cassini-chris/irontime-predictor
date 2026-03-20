@@ -254,7 +254,7 @@ export function GoalSetter({
           <CardTitle>Set Target Time</CardTitle>
         </CardHeader>
         <CardContent className="space-y-8">
-          <div className="space-y-4 rounded-lg border bg-background p-6 shadow-inner">
+          <div className="space-y-4 rounded-lg border bg-background p-4 sm:p-6 shadow-inner">
             <Label htmlFor="goal-time-slider" className="text-center db-block w-full text-lg font-medium">Expected Finish Time</Label>
             <p className="text-center font-mono text-5xl font-bold text-primary tracking-tighter py-2">{formatTime(goalTime)}</p>
             <Slider

@@ -4,12 +4,11 @@
 
 @layer base {
   :root {
-    /* Background Image */
-    background-image: url('/bg-pattern.png');
-    background-size: 400px;
-    background-repeat: repeat;
+    /* Premium Radial Background */
+    background: radial-gradient(circle at top right, hsl(var(--primary) / 0.05), transparent 40%),
+      radial-gradient(circle at bottom left, hsl(var(--accent) / 0.05), transparent 40%),
+      hsl(var(--background));
     background-attachment: fixed;
-    background-blend-mode: multiply;
 
     /* Light Theme: Blue, White, Yellow */
     --background: 0 0% 100%;
@@ -64,7 +63,7 @@
   }
 
   .theme-roth {
-    /* Challenge Roth: Red, White, Carbon Black */
+    /* Roth: Red, White, Carbon Black */
     --background: 0 0% 100%;
     --foreground: 0 0% 3.9%;
     --card: 0 0% 98%;

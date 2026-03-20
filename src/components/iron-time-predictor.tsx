@@ -29,14 +29,16 @@ import {
   ArrowRightLeft,
   SlidersHorizontal,
   Target,
+  Share2,
 } from 'lucide-react';
 import { GoalSetter } from './goal-setter';
 import { ProComparison } from './pro-comparison';
 import { NutritionCalculator } from './nutrition-calculator';
-import { RaceDayChecklist } from './race-day-checklist';
 import AdBanner from './ad-banner';
-import { RotateCcw } from 'lucide-react';
+import { RotateCcw, Printer, Save, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useLocalStorageState } from '@/hooks/use-local-storage-state';
+import { PrintablePaceBand } from './pace-band';
 
 export type Time = { h: number; m: number; s: number };
 const zeroTime: Time = { h: 0, m: 0, s: 0 };
@@ -81,19 +83,44 @@ export function IronTimePredictor({
   setDistance,
 }: IronTimePredictorProps) {
   const [totalTime, setTotalTime] = useState<Time>(zeroTime);
-  const [mainMode, setMainMode] = useState<'manual' | 'goal'>('goal');
+  const [mainMode, setMainMode] = useLocalStorageState<'manual' | 'goal'>('tri-main-mode', 'goal');
 
-  // Input mode and value states
-  const [swimInputMode, setSwimInputMode] = useState<'time' | 'pace'>('time');
-  const [bikeInputMode, setBikeInputMode] = useState<'time' | 'speed'>('time');
-  const [runInputMode, setRunInputMode] = useState<'time' | 'pace'>('time');
+  // Input mode and value states with persistence
+  const [swimInputMode, setSwimInputMode] = useLocalStorageState<'time' | 'pace'>('tri-swim-mode', 'time');
+  const [bikeInputMode, setBikeInputMode] = useLocalStorageState<'time' | 'speed'>('tri-bike-mode', 'time');
+  const [runInputMode, setRunInputMode] = useLocalStorageState<'time' | 'pace'>('tri-run-mode', 'time');
 
-  const [swimPace, setSwimPace] = useState<Pace>({ m: 1, s: 45 });
-  const [bikeSpeed, setBikeSpeed] = useState(35);
-  const [runPace, setRunPace] = useState<Pace>({ m: 5, s: 30 });
+  const [swimPace, setSwimPace] = useLocalStorageState<Pace>('tri-swim-pace', { m: 1, s: 45 });
+  const [bikeSpeed, setBikeSpeed] = useLocalStorageState<number>('tri-bike-speed', 35);
+  const [runPace, setRunPace] = useLocalStorageState<Pace>('tri-run-pace', { m: 5, s: 30 });
 
   const totalTimeCardRef = useRef<HTMLDivElement>(null);
   const [isTotalTimeVisible, setIsTotalTimeVisible] = useState(true);
+
+  const [savedPrediction, setSavedPrediction] = useLocalStorageState<any>('tri-saved-prediction', null);
+
+  const handleSave = () => {
+    setSavedPrediction({ swimTime, t1Time, bikeTime, t2Time, runTime, distance });
+    alert('Prediction saved!');
+  };
+
+  const handleLoad = () => {
+    if (savedPrediction) {
+      setSwimTime(savedPrediction.swimTime);
+      setT1Time(savedPrediction.t1Time);
+      setBikeTime(savedPrediction.bikeTime);
+      setT2Time(savedPrediction.t2Time);
+      setRunTime(savedPrediction.runTime);
+      setDistance(savedPrediction.distance);
+      alert('Prediction loaded!');
+    } else {
+      alert('No saved prediction found.');
+    }
+  };
+
+  const handlePrint = () => {
+    window.print();
+  };
 
   const timeToSeconds = (time: Time) => time.h * 3600 + time.m * 60 + time.s;
   const secondsToTime = (seconds: number): Time => {
@@ -210,7 +237,6 @@ export function IronTimePredictor({
       setSwimTime(zeroTime);
       setBikeTime(zeroTime);
       setRunTime(zeroTime);
-      // Default transition times
       setT1Time({ h: 0, m: 5, s: 0 });
       setT2Time({ h: 0, m: 3, s: 0 });
     }
@@ -460,8 +486,33 @@ export function IronTimePredictor({
         <div className="lg:col-span-2 space-y-8">
           <Card
             ref={totalTimeCardRef}
-            className="shadow-lg hover:shadow-xl transition-shadow duration-300"
+            className="shadow-lg hover:shadow-xl transition-shadow duration-300 relative overflow-hidden"
           >
+            <div className="absolute top-4 right-4 z-10 flex gap-2">
+              {savedPrediction && (
+                <Button variant="ghost" size="icon" onClick={handleLoad} title="Load Saved">
+                  <Download className="h-5 w-5 text-primary" />
+                </Button>
+              )}
+              <Button variant="ghost" size="icon" onClick={handleSave} title="Save Current">
+                <Save className="h-5 w-5 text-primary" />
+              </Button>
+              <Button variant="ghost" size="icon" onClick={handlePrint} title="Print Pace Band">
+                <Printer className="h-5 w-5 text-primary" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => {
+                  const text = `My Triathlon Prediction:\nTotal: ${formatTime(totalTime)}\nSwim: ${formatTime(swimTime)}\nBike: ${formatTime(bikeTime)}\nRun: ${formatTime(runTime)}\nBuilt with IronTime Predictor`;
+                  navigator.clipboard.writeText(text);
+                  alert('Copied to clipboard!');
+                }}
+                title="Share Status"
+              >
+                <Share2 className="h-5 w-5 text-primary" />
+              </Button>
+            </div>
             <CardHeader>
               <CardTitle className="text-2xl font-headline tracking-tight">
                 Your Time
@@ -510,6 +561,19 @@ export function IronTimePredictor({
             runTime={runTime}
             distance={distance}
           />
+
+          <Card className="shadow-lg border-2 border-muted/50 overflow-hidden flex flex-col">
+            <CardHeader className="bg-muted/30 border-b p-4">
+              <CardTitle className="text-xs font-black uppercase tracking-[0.2em] flex items-center gap-2">
+                <div className="w-1.5 h-4 bg-primary rounded-full" />
+                Run Pace Splits (km)
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0 max-h-[300px] overflow-auto">
+              <RunSplitsTable runTime={runTime} distance={DISTANCES[distance].run} />
+            </CardContent>
+          </Card>
+
           <NutritionCalculator bikeTime={bikeTime} runTime={runTime} />
           <ProComparison
             totalTime={totalTime}
@@ -518,10 +582,63 @@ export function IronTimePredictor({
             runTime={runTime}
             distance={distance}
           />
-          <RaceDayChecklist />
           <AdBanner />
         </div>
       </div>
+      <PrintablePaceBand
+        swimTime={swimTime}
+        t1Time={t1Time}
+        bikeTime={bikeTime}
+        t2Time={t2Time}
+        runTime={runTime}
+        distanceConfig={DISTANCES[distance]}
+        totalTime={totalTime}
+      />
     </>
+  );
+}
+
+function RunSplitsTable({ runTime, distance }: { runTime: Time, distance: number }) {
+  const totalSeconds = runTime.h * 3600 + runTime.m * 60 + runTime.s;
+  if (totalSeconds <= 0 || distance <= 0) return null;
+
+  const paceSeconds = totalSeconds / distance;
+  const splits = [];
+  const interval = distance > 21.1 ? 5 : 1;
+
+  for (let i = interval; i < distance; i += interval) {
+    splits.push({ unit: i, time: i * paceSeconds });
+  }
+  splits.push({ unit: distance, time: totalSeconds });
+
+  const formatSplitTime = (seconds: number) => {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = Math.round(seconds % 60);
+    if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    return `${m}:${String(s).padStart(2, '0')}`;
+  };
+
+  return (
+    <table className="w-full text-sm">
+      <thead className="bg-muted/50 sticky top-0">
+        <tr className="border-b">
+          <th className="px-6 py-3 text-left font-black uppercase tracking-widest text-[10px] text-muted-foreground w-1/3">Split (km)</th>
+          <th className="px-6 py-3 text-right font-black uppercase tracking-widest text-[10px] text-muted-foreground">Elapsed Time</th>
+        </tr>
+      </thead>
+      <tbody className="divide-y">
+        {splits.map((split, idx) => (
+          <tr key={idx} className="hover:bg-primary/5 transition-colors group">
+            <td className="px-6 py-4 font-mono text-muted-foreground group-hover:text-primary transition-colors">
+              {idx === splits.length - 1 ? split.unit.toFixed(1) : split.unit} km
+            </td>
+            <td className="px-6 py-4 text-right font-mono font-bold tabular-nums">
+              {formatSplitTime(split.time)}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
   );
 }
