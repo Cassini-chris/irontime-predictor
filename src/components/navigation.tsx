@@ -19,44 +19,75 @@ export function Navigation() {
     const pathname = usePathname();
     const [open, setOpen] = useState(false);
 
-    const navItems = [
-        { name: 'Runculator', href: '/' },
-        { name: 'Triathlon Calculator', href: '/triathlon' },
-        { name: 'Training Plans', href: '/training-plans' },
-        { name: 'Race Checklists', href: '/checklists' },
-        { name: 'Race Predictor', href: '/race-predictor' },
-        { name: 'Training Paces', href: '/training-paces' },
-        { name: 'Athletics Records', href: '/athletics-records' },
-        { name: 'Triathlon Records', href: '/triathlon-records' },
+    const categories = [
+        {
+            name: 'Calculators',
+            items: [
+                { name: 'Triathlon', href: '/triathlon' },
+                { name: 'Runculator', href: '/' },
+                { name: 'Predictor', href: '/race-predictor' },
+            ]
+        },
+        {
+            name: 'Planning',
+            items: [
+                { name: 'Plans', href: '/training-plans' },
+                { name: 'Checklists', href: '/checklists' },
+                { name: 'Paces', href: '/training-paces' },
+            ]
+        },
+        {
+            name: 'Resources',
+            items: [
+                { name: 'Athletics', href: '/athletics-records' },
+                { name: 'Triathlon', href: '/triathlon-records' },
+                { name: 'Expert Guide', href: '/expert-guide' },
+            ]
+        }
     ];
 
+    const allItems = categories.flatMap(cat => cat.items);
+
     return (
-        <nav className="w-full border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
+        <nav className="w-full border-b border-border bg-card/60 backdrop-blur-xl sticky top-0 z-50">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center justify-between h-16">
                     {/* Desktop Navigation */}
-                    <div className="hidden md:flex items-center justify-center w-full gap-4 lg:gap-8">
-                        {navItems.map((item) => {
-                            const isActive = pathname === item.href;
-                            return (
-                                <Link
-                                    key={item.href}
-                                    href={item.href}
-                                    className={cn(
-                                        'relative px-3 py-2 text-sm font-medium transition-all duration-200 rounded-lg whitespace-nowrap',
-                                        'hover:bg-primary/10 hover:text-primary',
-                                        isActive
-                                            ? 'text-primary bg-primary/10'
-                                            : 'text-muted-foreground'
-                                    )}
-                                >
-                                    {item.name}
-                                    {isActive && (
-                                        <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
-                                    )}
-                                </Link>
-                            );
-                        })}
+                    <div className="hidden md:flex items-center justify-between w-full">
+                        <Link href="/" className="flex items-center gap-2 shrink-0 mr-8 group">
+                            <Logo className="h-7 w-7 text-primary group-hover:rotate-12 transition-transform duration-300" />
+                            <span className="font-black text-2xl tracking-tighter bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                                IRONTIME
+                            </span>
+                        </Link>
+                        
+                        <div className="flex items-center gap-1 lg:gap-2">
+                            {categories.map((cat, idx) => (
+                                <div key={cat.name} className="flex items-center gap-1 lg:gap-2">
+                                    {idx > 0 && <div className="w-px h-6 bg-border mx-2" />}
+                                    <div className="flex gap-1">
+                                        {cat.items.map((item) => {
+                                            const isActive = pathname === item.href;
+                                            return (
+                                                <Link
+                                                    key={item.href}
+                                                    href={item.href}
+                                                    className={cn(
+                                                        'relative px-3 py-1.5 text-xs lg:text-sm font-bold transition-all duration-300 rounded-lg whitespace-nowrap',
+                                                        'hover:bg-primary/5 hover:text-primary',
+                                                        isActive
+                                                            ? 'text-primary bg-primary/10 shadow-sm'
+                                                            : 'text-muted-foreground'
+                                                    )}
+                                                >
+                                                    {item.name}
+                                                </Link>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     </div>
 
                     {/* Mobile Navigation */}
@@ -78,25 +109,34 @@ export function Navigation() {
                                 <SheetHeader>
                                     <SheetTitle className="text-left">Navigation</SheetTitle>
                                 </SheetHeader>
-                                <div className="flex flex-col gap-4 mt-8">
-                                    {navItems.map((item) => {
-                                        const isActive = pathname === item.href;
-                                        return (
-                                            <Link
-                                                key={item.href}
-                                                href={item.href}
-                                                onClick={() => setOpen(false)}
-                                                className={cn(
-                                                    'block px-4 py-3 text-lg font-medium transition-all duration-200 rounded-xl',
-                                                    isActive
-                                                        ? 'text-primary bg-primary/10'
-                                                        : 'text-muted-foreground hover:bg-accent/10 hover:text-accent'
-                                                )}
-                                            >
-                                                {item.name}
-                                            </Link>
-                                        );
-                                    })}
+                                <div className="flex flex-col gap-6 mt-8">
+                                    {categories.map((cat) => (
+                                        <div key={cat.name} className="space-y-3">
+                                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 px-4">
+                                                {cat.name}
+                                            </p>
+                                            <div className="flex flex-col gap-1">
+                                                {cat.items.map((item) => {
+                                                    const isActive = pathname === item.href;
+                                                    return (
+                                                        <Link
+                                                            key={item.href}
+                                                            href={item.href}
+                                                            onClick={() => setOpen(false)}
+                                                            className={cn(
+                                                                'block px-4 py-3 text-lg font-bold transition-all duration-200 rounded-xl',
+                                                                isActive
+                                                                    ? 'text-primary bg-primary/10'
+                                                                    : 'text-muted-foreground hover:bg-accent/10 hover:text-accent'
+                                                            )}
+                                                        >
+                                                            {item.name}
+                                                        </Link>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
                             </SheetContent>
                         </Sheet>

@@ -30,17 +30,17 @@ export const buildWeek = (
 };
 
 export const rest = (): Workout[] => [{ type: 'rest', title: 'Rest Day', description: 'Focus on recovery, hydration, and stretching.' }];
-export const runE = (mins: number, desc = 'Easy aerobic pace. You should be able to hold a conversation.'): Workout[] => [{ type: 'run', title: `Easy Run (${mins}m)`, durationMinutes: mins, description: `Pace: {{Z2_PACE}}. ${desc}` }];
+export const runE = (mins: number, desc = 'Easy aerobic pace. You should be able to hold a conversation.'): Workout[] => [{ type: 'run', title: `Easy Run (${mins} min)`, durationMinutes: mins, description: `Pace: {{Z2_PACE}}. ${desc}` }];
 export const runL = (distance: number, desc = 'Long endurance run.'): Workout[] => [{ type: 'run', title: `Long Run (${distance}km)`, distanceKm: distance, description: `Pace: {{Z2_PACE}}. ${desc}` }];
-export const runT = (minsTotal: number, minsTempo: number): Workout[] => [{ type: 'run', title: `Tempo Run (${minsTotal}m)`, durationMinutes: minsTotal, description: `Warm up 15m. Run ${minsTempo}m at Tempo pace ({{Z3_PACE}}). Cool down 15m.` }];
-export const runI = (reps: number, dist: string, restMins: number): Workout[] => [{ type: 'run', title: `Intervals (${reps}x${dist})`, description: `Warm up 15m. ${reps}x${dist} at Interval pace ({{Z5_PACE}}) with ${restMins}m jogging recovery. Cool down 10m.` }];
+export const runT = (minsTotal: number, minsTempo: number): Workout[] => [{ type: 'run', title: `Tempo Run (${minsTotal} min)`, durationMinutes: minsTotal, description: `Warm up 15 min. Run ${minsTempo} min at Tempo pace ({{Z3_PACE}}). Cool down 15 min.` }];
+export const runI = (reps: number, dist: string, restMins: number): Workout[] => [{ type: 'run', title: `Intervals (${reps}x${dist})`, description: `Warm up 15 min. ${reps}x${dist} at Interval pace ({{Z5_PACE}}) with ${restMins} min jogging recovery. Cool down 10 min.` }];
 
-export const bikeE = (mins: number): Workout[] => [{ type: 'bike', title: `Easy Ride (${mins}m)`, durationMinutes: mins, description: `Easy aerobic spin, Zone 2.` }];
+export const bikeE = (mins: number): Workout[] => [{ type: 'bike', title: `Easy Ride (${mins} min)`, durationMinutes: mins, description: `Easy aerobic spin, Zone 2.` }];
 export const bikeL = (mins: number): Workout[] => [{ type: 'bike', title: `Long Ride (${Math.floor(mins/60)}h ${mins%60}m)`, durationMinutes: mins, description: `Endurance pace, Zone 2. Fuel consistently.` }];
-export const bikeT = (minsTotal: number, reps: number, repMins: number): Workout[] => [{ type: 'bike', title: `Threshold Ride (${minsTotal}m)`, durationMinutes: minsTotal, description: `Warm up 20m. ${reps}x${repMins}m at Tempo/Threshold effort (Zone 3/4) with 5m easy spin between. Cool down.` }];
+export const bikeT = (minsTotal: number, reps: number, repMins: number): Workout[] => [{ type: 'bike', title: `Threshold Ride (${minsTotal} min)`, durationMinutes: minsTotal, description: `Warm up 20 min. ${reps}x${repMins} min at Tempo/Threshold effort (Zone 3/4) with 5 min easy spin between. Cool down.` }];
 
 export const swimE = (meters: number): Workout[] => [{ type: 'swim', title: `Endurance Swim (${meters}m)`, description: `Continuous or broken aerobic swimming. E.g. ${meters/100}x100m with 15s rest, moderate effort.` }];
 export const swimI = (totalMeters: number, coreS: string): Workout[] => [{ type: 'swim', title: `Interval Swim (${totalMeters}m)`, description: `Warm up 400m. Main set: ${coreS} at hard effort. Cool down 200m.` }];
 
-export const brick = (bikeMins: number, runMins: number): Workout[] => [{ type: 'brick', title: `Brick Workout`, description: `Ride ${bikeMins}m in Zone 2/3, then immediately transition to a ${runMins}m run at race pace ({{Z3_PACE}}). practice your T2.` }];
+export const brick = (bikeMins: number, runMins: number): Workout[] => [{ type: 'brick', title: `Brick Workout`, description: `Ride ${bikeMins} min in Zone 2/3, then immediately transition to a ${runMins} min run at race pace ({{Z3_PACE}}). practice your T2.` }];
 

@@ -243,12 +243,12 @@ export function RaceDayChecklist() {
             </CardHeader>
             <CardContent>
                 <Tabs defaultValue={CATEGORIES[sport][0].id} className="w-full">
-                    <TabsList className="flex flex-wrap h-auto p-1 bg-muted/30 mb-8 gap-1">
+                    <TabsList className="w-full flex justify-start lg:justify-center overflow-x-auto overflow-y-hidden whitespace-nowrap bg-muted/30 p-1 mb-8 gap-1 scrollbar-hide no-scrollbar">
                         {CATEGORIES[sport].map((cat) => (
                             <TabsTrigger
                                 key={cat.id}
                                 value={cat.id}
-                                className="flex-1 min-w-[80px] py-2.5 data-[state=active]:bg-card data-[state=active]:shadow-sm rounded-lg transition-all"
+                                className="px-6 py-2.5 data-[state=active]:bg-card data-[state=active]:shadow-sm rounded-lg transition-all"
                             >
                                 {cat.label}
                             </TabsTrigger>

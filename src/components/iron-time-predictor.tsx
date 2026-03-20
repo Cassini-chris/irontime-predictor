@@ -283,24 +283,33 @@ export function IronTimePredictor({
   return (
     <>
       {!isTotalTimeVisible && (
-        <div className="fixed bottom-0 left-0 right-0 bg-primary/95 backdrop-blur-sm text-primary-foreground p-3 text-center shadow-lg z-50 animate-in fade-in-50 slide-in-from-bottom-4 duration-500 lg:hidden">
-          <span className="font-medium text-sm">Your Time: </span>
-          <span className="font-bold font-mono tracking-tighter text-lg">
-            {formatTime(totalTime)}
-          </span>
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-md bg-primary/95 backdrop-blur-md text-primary-foreground py-3 px-6 rounded-full shadow-2xl z-50 animate-in fade-in zoom-in slide-in-from-bottom-8 duration-500 border border-primary-foreground/20 lg:hidden flex items-center justify-between">
+          <div className="flex flex-col">
+            <span className="text-[10px] uppercase font-bold tracking-[0.2em] opacity-80">Finish Time</span>
+            <span className="font-bold font-mono tracking-tighter text-2xl leading-none">
+              {formatTime(totalTime)}
+            </span>
+          </div>
+          <div className="h-8 w-px bg-primary-foreground/20 " />
+          <div className="flex flex-col items-end">
+            <span className="text-[10px] uppercase font-bold tracking-[0.2em] opacity-80">Run Pace</span>
+            <span className="font-mono text-xs font-bold">{summary.runPace}</span>
+          </div>
         </div>
       )}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 w-full">
-        <Card className="lg:col-span-3 shadow-lg hover:shadow-xl transition-shadow duration-300 flex flex-col overflow-hidden">
-          <CardHeader>
+        <Card className="lg:col-span-3 shadow-2xl hover:shadow-[0_20px_50px_rgba(0,0,0,0.1)] transition-all duration-500 border-primary/10 flex flex-col overflow-hidden bg-card/60 backdrop-blur-xl group">
+          <CardHeader className="bg-primary/5 pb-8 border-b border-primary/5">
             <div className="flex justify-between items-start">
-              <div>
-                <CardTitle className="text-2xl font-headline tracking-tight flex items-center gap-3">
-                  <Target className="h-6 w-6 text-primary" />
-                  Goal Setter
+              <div className="space-y-1">
+                <CardTitle className="text-3xl font-black font-headline tracking-tighter flex items-center gap-4 group-hover:translate-x-1 transition-transform duration-300">
+                  <div className="p-3 bg-primary/10 rounded-2xl group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                    <Target className="h-7 w-7" />
+                  </div>
+                  IRONSTRATEGY
                 </CardTitle>
-                <CardDescription>
-                  Set your goal time to calculate discipline paces.
+                <CardDescription className="text-base font-medium text-muted-foreground/80">
+                  Engineer your perfect race. Every second counts.
                 </CardDescription>
               </div>
               <Button variant="outline" size="sm" onClick={resetAll} title="Reset All Times">

@@ -46,16 +46,16 @@ export const SteppableInput = React.forwardRef<HTMLInputElement, SteppableInputP
         const displayValue = value === 0 && !isFocused ? '' : value;
 
         return (
-            <div className="relative flex items-center w-full group">
+            <div className="relative flex items-center w-full group overflow-hidden rounded-xl border-2 border-transparent focus-within:border-primary/20 transition-all duration-300">
                 <Button
                     variant="ghost"
                     size="icon"
-                    className="absolute left-0 h-full w-8 rounded-r-none border-r hover:bg-muted/80 z-10"
+                    className="absolute left-0 h-full w-10 text-muted-foreground/50 hover:text-primary hover:bg-primary/10 transition-colors z-10 border-r border-border/50 rounded-none"
                     onClick={decrement}
                     tabIndex={-1}
                     type="button"
                 >
-                    <Minus className="h-3 w-3" />
+                    <Minus className="h-4 w-4" />
                 </Button>
                 <Input
                     {...props}
@@ -78,19 +78,19 @@ export const SteppableInput = React.forwardRef<HTMLInputElement, SteppableInputP
                         }
                     }}
                     className={cn(
-                        "text-center font-mono px-8 focus-visible:ring-1 focus-visible:ring-offset-0 transition-all min-w-[80px]",
+                        "text-center font-mono text-xl font-bold px-12 h-14 bg-muted/30 focus-visible:ring-0 focus-visible:ring-offset-0 border-none transition-all min-w-[100px] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none",
                         className
                     )}
                 />
                 <Button
                     variant="ghost"
                     size="icon"
-                    className="absolute right-0 h-full w-8 rounded-l-none border-l hover:bg-muted/80 z-10"
+                    className="absolute right-0 h-full w-10 text-muted-foreground/50 hover:text-primary hover:bg-primary/10 transition-colors z-10 border-l border-border/50 rounded-none"
                     onClick={increment}
                     tabIndex={-1}
                     type="button"
                 >
-                    <Plus className="h-3 w-3" />
+                    <Plus className="h-4 w-4" />
                 </Button>
             </div>
         );

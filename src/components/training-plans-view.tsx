@@ -6,11 +6,12 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Button } from '@/components/ui/button';
 import { TimeInputGroup } from '@/components/time-input-group';
-import { DistanceType, DurationWeeks, UserGoal } from '@/lib/training-plans/types';
+import { DistanceType, DurationWeeks, UnitType } from '@/lib/training-plans/types';
 import { generatePlan } from '@/lib/training-plans/generator';
 import { calculatePaceZones, injectPaces } from '@/lib/training-plans/calculations';
 import { TrainingPlanTable } from './training-plan-table';
 import { Activity, Printer, Download } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import AdBanner from './ad-banner';
 
 interface Time {
@@ -38,6 +39,7 @@ export function TrainingPlansView() {
     const [distance, setDistance] = useState<DistanceType>('marathon');
     const [durationWeeks, setDurationWeeks] = useState<DurationWeeks>(12);
     const [goalTime, setGoalTime] = useState<Time>({ h: 3, m: 30, s: 0 });
+    const [unit, setUnit] = useState<UnitType>('metric');
 
     const handlePrint = () => {
         window.print();
@@ -92,29 +94,37 @@ export function TrainingPlansView() {
                 <CardContent className="space-y-8">
                     <div className="grid md:grid-cols-2 gap-8">
                         <div className="space-y-4">
-                            <Label className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Race Distance</Label>
-                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                            <Label className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground/80">Race Distance</Label>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                                 {DISTANCES.map((d) => (
                                     <Button
                                         key={d.id}
+                                        type="button"
                                         variant={distance === d.id ? "default" : "outline"}
-                                        className={distance === d.id ? "bg-primary text-primary-foreground shadow-md" : ""}
+                                        className={cn(
+                                            "relative h-14 w-full text-sm font-bold transition-all duration-300 rounded-xl",
+                                            distance === d.id ? "shadow-lg shadow-primary/20" : "hover:border-primary/50 hover:bg-primary/5"
+                                        )}
                                         onClick={() => setDistance(d.id)}
                                     >
                                         {d.name}
-                                        {distance === d.id && <div className="absolute inset-0 ring-2 ring-primary ring-offset-2 rounded-md transition-all"></div>}
                                     </Button>
                                 ))}
                             </div>
                         </div>
 
                         <div className="space-y-4">
-                            <Label className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Plan Duration</Label>
-                            <div className="grid grid-cols-3 gap-2">
+                            <Label className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground/80">Plan Duration</Label>
+                            <div className="grid grid-cols-3 gap-3">
                                 {DURATIONS.map((d) => (
                                     <Button
                                         key={d.id}
+                                        type="button"
                                         variant={durationWeeks === d.id ? "default" : "outline"}
+                                        className={cn(
+                                            "relative h-14 w-full text-sm font-bold transition-all duration-300 rounded-xl",
+                                            durationWeeks === d.id ? "shadow-lg shadow-primary/20" : "hover:border-primary/50 hover:bg-primary/5"
+                                        )}
                                         onClick={() => setDurationWeeks(d.id)}
                                     >
                                         {d.name}
@@ -124,16 +134,46 @@ export function TrainingPlansView() {
                         </div>
                     </div>
 
-                    <div className="border-t pt-8">
-                        <div className="max-w-md mx-auto space-y-4">
-                            <Label className="text-sm font-semibold uppercase tracking-wider text-muted-foreground block text-center">
-                                Goal Time 
-                                {distance.includes('ironman') && <span className="text-xs normal-case block mt-1 text-primary">Enter your total race goal time. We'll estimate the run split.</span>}
-                            </Label>
+                    <div className="border-t pt-8 grid md:grid-cols-2 gap-10 items-start">
+                        <div className="space-y-4">
+                            <div className="flex flex-col gap-1">
+                                <Label className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground/80">
+                                    Target Finish Time
+                                </Label>
+                                {distance.includes('ironman') && (
+                                    <span className="text-[10px] font-medium text-primary uppercase tracking-wider">
+                                        Total race time (Swim + Bike + Run)
+                                    </span>
+                                )}
+                            </div>
                             <TimeInputGroup
                                 time={goalTime}
                                 setTime={setGoalTime}
                             />
+                        </div>
+
+                        <div className="space-y-4">
+                            <Label className="text-sm font-semibold uppercase tracking-wider text-muted-foreground block text-center md:text-left">Distance Units</Label>
+                            <div className="flex justify-center md:justify-start">
+                                <div className="inline-flex p-1 bg-muted rounded-xl gap-1">
+                                    <Button 
+                                        variant={unit === 'metric' ? "default" : "ghost"}
+                                        size="sm"
+                                        onClick={() => setUnit('metric')}
+                                        className="rounded-lg font-bold"
+                                    >
+                                        Metric (km)
+                                    </Button>
+                                    <Button 
+                                        variant={unit === 'imperial' ? "default" : "ghost"}
+                                        size="sm"
+                                        onClick={() => setUnit('imperial')}
+                                        className="rounded-lg font-bold"
+                                    >
+                                        Imperial (mi)
+                                    </Button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </CardContent>
@@ -147,7 +187,7 @@ export function TrainingPlansView() {
             </div>
 
             <div className="print-content">
-                <TrainingPlanTable plan={plan} zones={zones} distance={distance} durationWeeks={durationWeeks} />
+                <TrainingPlanTable plan={plan} zones={zones} distance={distance} durationWeeks={durationWeeks} unit={unit} />
             </div>
 
             <AdBanner />

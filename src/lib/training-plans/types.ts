@@ -1,6 +1,7 @@
 export type DistanceType = '5k' | '10k' | 'half-marathon' | 'marathon' | 'ironman-70.3' | 'ironman-full';
 export type DurationWeeks = 8 | 12 | 16;
 export type WorkoutType = 'run' | 'bike' | 'swim' | 'strength' | 'rest' | 'brick' | 'cross-train';
+export type UnitType = 'metric' | 'imperial';
 
 export interface Workout {
     type: WorkoutType;

@@ -1,4 +1,4 @@
-import { PaceZones } from './types';
+import { PaceZones, UnitType } from './types';
 
 // VDOT Mathematics (derived from training-pace-calculator.tsx)
 export const calculateVDOT = (distanceKm: number, timeMins: number) => {
@@ -25,11 +25,20 @@ export const getPaceForIntensity = (vdot: number, intensityPercent: number) => {
     return minPerKm * 60; // seconds per km
 };
 
-export const formatPace = (secondsPerKm: number) => {
+export const formatPace = (secondsPerKm: number, unit: UnitType = 'metric') => {
     if (secondsPerKm <= 0) return 'N/A';
-    const m = Math.floor(secondsPerKm / 60);
-    const s = Math.floor(secondsPerKm % 60);
-    return `${m}:${String(s).padStart(2, '0')}/km`;
+    
+    let secondsPerUnit = secondsPerKm;
+    let unitLabel = 'km';
+    
+    if (unit === 'imperial') {
+        secondsPerUnit = secondsPerKm * 1.60934;
+        unitLabel = 'mile';
+    }
+
+    const m = Math.floor(secondsPerUnit / 60);
+    const s = Math.floor(secondsPerUnit % 60);
+    return `${m}:${String(s).padStart(2, '0')}/${unitLabel}`;
 };
 
 export const calculatePaceZones = (distanceKm: number, goalTimeSeconds: number): PaceZones => {
@@ -45,12 +54,12 @@ export const calculatePaceZones = (distanceKm: number, goalTimeSeconds: number):
     };
 };
 
-export const injectPaces = (description: string, zones: PaceZones): string => {
+export const injectPaces = (description: string, zones: PaceZones, unit: UnitType = 'metric'): string => {
     return description
-        .replace(/\{\{Z1_PACE\}\}/g, formatPace(zones.recovery))
-        .replace(/\{\{Z2_PACE\}\}/g, formatPace(zones.easy))
-        .replace(/\{\{Z3_PACE\}\}/g, formatPace(zones.tempo))
-        .replace(/\{\{Z4_PACE\}\}/g, formatPace(zones.threshold))
-        .replace(/\{\{Z5_PACE\}\}/g, formatPace(zones.vo2max))
-        .replace(/\{\{SPEED_PACE\}\}/g, formatPace(zones.speed));
+        .replace(/\{\{Z1_PACE\}\}/g, formatPace(zones.recovery, unit))
+        .replace(/\{\{Z2_PACE\}\}/g, formatPace(zones.easy, unit))
+        .replace(/\{\{Z3_PACE\}\}/g, formatPace(zones.tempo, unit))
+        .replace(/\{\{Z4_PACE\}\}/g, formatPace(zones.threshold, unit))
+        .replace(/\{\{Z5_PACE\}\}/g, formatPace(zones.vo2max, unit))
+        .replace(/\{\{SPEED_PACE\}\}/g, formatPace(zones.speed, unit));
 };

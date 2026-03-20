@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { TimeInputGroup } from './time-input-group';
 import type { Time } from './iron-time-predictor';
 import { Button } from './ui/button';
+import { cn } from '@/lib/utils';
 import {
   Card,
   CardContent,
@@ -249,14 +250,16 @@ export function GoalSetter({
 
   return (
     <div className="space-y-6 pt-4">
-      <Card className="border-dashed bg-card/50">
-        <CardHeader>
-          <CardTitle>Set Target Time</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-8">
-          <div className="space-y-4 rounded-lg border bg-background p-4 sm:p-6 shadow-inner">
-            <Label htmlFor="goal-time-slider" className="text-center db-block w-full text-lg font-medium">Expected Finish Time</Label>
-            <p className="text-center font-mono text-5xl font-bold text-primary tracking-tighter py-2">{formatTime(goalTime)}</p>
+    <div className="space-y-8 pb-8">
+      <div className="space-y-8">
+        <div className="space-y-6">
+          <div className="space-y-6 rounded-2xl bg-primary/5 p-6 md:p-8 border border-primary/10 shadow-inner group">
+            <Label htmlFor="goal-time-slider" className="text-center block w-full text-xs font-black uppercase tracking-[0.2em] text-muted-foreground/80">
+              Expected Finish Time
+            </Label>
+            <p className="text-center font-mono text-6xl md:text-7xl font-black text-primary tracking-tighter py-4 hover:scale-105 transition-transform duration-500">
+              {formatTime(goalTime)}
+            </p>
             <Slider
               id="goal-time-slider"
               min={min}
@@ -264,114 +267,95 @@ export function GoalSetter({
               step={step}
               value={[timeToSeconds(goalTime)]}
               onValueChange={(value) => setGoalTime(secondsToTime(value[0]))}
-              className="my-4"
+              className="my-6"
             />
           </div>
 
-          <TimeInputGroup label="Or Enter Target Time Manually" time={goalTime} setTime={setGoalTime} />
-
-          <div className="space-y-2">
-            <Label htmlFor="course-profile">Course Profile</Label>
-            <Select
-              value={courseProfile}
-              onValueChange={setCourseProfile}
-            >
-              <SelectTrigger id="course-profile">
-                <SelectValue placeholder="Select course profile" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="flat">Flat & Fast</SelectItem>
-                <SelectItem value="rolling">Rolling Hills</SelectItem>
-                <SelectItem value="hilly">Hilly</SelectItem>
-                <SelectItem value="extreme">Extreme / Mountainous</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="bg-muted/20 p-6 rounded-2xl border border-border/50">
+            <TimeInputGroup label="Refine Target Time Manually" time={goalTime} setTime={setGoalTime} />
           </div>
 
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <Label htmlFor="athlete-bias">Athlete Bias</Label>
-              <span className="text-xs font-medium text-muted-foreground">{biasLabel}</span>
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="space-y-3">
+              <Label htmlFor="course-profile" className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground/80 pl-1">Course Profile</Label>
+              <Select
+                value={courseProfile}
+                onValueChange={setCourseProfile}
+              >
+                <SelectTrigger id="course-profile" className="h-12 rounded-xl bg-background/50 border-primary/10 transition-all hover:border-primary/50">
+                  <SelectValue placeholder="Select course profile" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl border-primary/10">
+                  <SelectItem value="flat">Flat & Fast</SelectItem>
+                  <SelectItem value="rolling">Rolling Hills</SelectItem>
+                  <SelectItem value="hilly">Hilly</SelectItem>
+                  <SelectItem value="extreme">Extreme / Mountainous</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-            <div className="flex flex-col gap-3 text-xs text-muted-foreground sm:flex-row sm:items-center sm:gap-4">
-              <div className="flex justify-between w-full sm:w-auto sm:contents">
-                <span>Strong Swimmer/Biker</span>
-                <span className="sm:hidden text-right">Strong Runner</span>
+
+            <div className="space-y-3">
+              <div className="flex justify-between items-center pl-1">
+                <Label htmlFor="athlete-bias" className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground/80">Athlete Bias</Label>
+                <span className="text-[10px] font-black uppercase tracking-widest text-primary">{biasLabel}</span>
               </div>
-              <Slider
-                id="athlete-bias"
-                min={0}
-                max={100}
-                step={5}
-                value={[athleteBias]}
-                onValueChange={(value) => setAthleteBias(value[0])}
-                className="flex-1"
-              />
-              <span className="hidden sm:block">Strong Runner</span>
+              <div className="flex flex-col gap-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground/50 sm:flex-row sm:items-center sm:gap-6 pt-2">
+                <div className="flex justify-between w-full sm:w-auto sm:contents">
+                  <span className="shrink-0">Swim/Bike</span>
+                  <span className="sm:hidden text-right">Runner</span>
+                </div>
+                <Slider
+                  id="athlete-bias"
+                  min={0}
+                  max={100}
+                  step={5}
+                  value={[athleteBias]}
+                  onValueChange={(value) => setAthleteBias(value[0])}
+                  className="flex-1"
+                />
+                <span className="hidden sm:block shrink-0">Runner</span>
+              </div>
             </div>
           </div>
 
-          <Button onClick={handleDistributeTime} className="w-full" disabled={isLoading}>
+          <Button 
+            onClick={handleDistributeTime} 
+            className="w-full h-14 rounded-2xl text-base font-black uppercase tracking-widest shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all duration-300 active:scale-[0.98]" 
+            disabled={isLoading}
+          >
             {isLoading ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <Loader2 className="mr-3 h-5 w-5 animate-spin" />
             ) : (
-              <SlidersHorizontal className="mr-2 h-4 w-4" />
+              <SlidersHorizontal className="mr-3 h-5 w-5" />
             )}
-            Generate Plan
+            {isLoading ? 'Engineering...' : 'Apply Strategy'}
           </Button>
-        </CardContent>
+        </div>
 
         {calculatedSplits && !isLoading && (
-          <>
-            <Separator />
-            <CardFooter className="flex flex-col items-start space-y-3 p-6 pt-4">
-              <h4 className="font-medium text-lg w-full text-center mb-2">
-                Suggested Splits
-              </h4>
-              <div className="w-full flex justify-between items-center text-sm">
-                <span className="flex items-center gap-2 text-muted-foreground">
-                  <Waves className="size-5 text-primary" /> Swim
-                </span>
-                <span className="font-mono font-medium text-foreground">
-                  {formatTime(calculatedSplits.swim)}
-                </span>
-              </div>
-              <div className="w-full flex justify-between items-center text-sm">
-                <span className="flex items-center gap-2 text-muted-foreground">
-                  <ArrowRightLeft className="size-5 text-accent" /> T1
-                </span>
-                <span className="font-mono font-medium text-foreground">
-                  {formatTime(calculatedSplits.t1)}
-                </span>
-              </div>
-              <div className="w-full flex justify-between items-center text-sm">
-                <span className="flex items-center gap-2 text-muted-foreground">
-                  <Bike className="size-5 text-primary" /> Bike
-                </span>
-                <span className="font-mono font-medium text-foreground">
-                  {formatTime(calculatedSplits.bike)}
-                </span>
-              </div>
-              <div className="w-full flex justify-between items-center text-sm">
-                <span className="flex items-center gap-2 text-muted-foreground">
-                  <ArrowRightLeft className="size-5 text-accent" /> T2
-                </span>
-                <span className="font-mono font-medium text-foreground">
-                  {formatTime(calculatedSplits.t2)}
-                </span>
-              </div>
-              <div className="w-full flex justify-between items-center text-sm">
-                <span className="flex items-center gap-2 text-muted-foreground">
-                  <PersonStanding className="size-5 text-primary" /> Run
-                </span>
-                <span className="font-mono font-medium text-foreground">
-                  {formatTime(calculatedSplits.run)}
-                </span>
-              </div>
-            </CardFooter>
-          </>
+          <div className="flex flex-col items-start space-y-4 p-8 rounded-2xl bg-primary/5 border border-primary/10 animate-in fade-in zoom-in duration-500">
+            <h4 className="font-black text-xs uppercase tracking-[0.3em] w-full text-center text-primary mb-2">
+              Statistically Derived Splits
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-5 w-full gap-4">
+              {[
+                { label: 'Swim', icon: Waves, time: calculatedSplits.swim, color: 'text-primary' },
+                { label: 'T1', icon: ArrowRightLeft, time: calculatedSplits.t1, color: 'text-accent' },
+                { label: 'Bike', icon: Bike, time: calculatedSplits.bike, color: 'text-primary' },
+                { label: 'T2', icon: ArrowRightLeft, time: calculatedSplits.t2, color: 'text-accent' },
+                { label: 'Run', icon: PersonStanding, time: calculatedSplits.run, color: 'text-primary' },
+              ].map((split) => (
+                <div key={split.label} className="flex flex-col items-center p-3 rounded-xl bg-background/50 border border-border/50">
+                  <split.icon className={cn("size-5 mb-2", split.color)} />
+                  <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">{split.label}</span>
+                  <span className="font-mono font-bold text-foreground">{formatTime(split.time)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
         )}
-      </Card>
+      </div>
+    </div>
     </div>
   );
 }
